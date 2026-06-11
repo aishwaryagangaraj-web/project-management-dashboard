@@ -15,11 +15,10 @@ https://project-management-dashboard-j8ih.onrender.com
 
 ### Landing Page
 
-(Add screenshot here)
 
 ### Dashboard
 
-(Add screenshot here)
+![alt text](dashboard-preview.png)
 
 ### Kanban Board
 
