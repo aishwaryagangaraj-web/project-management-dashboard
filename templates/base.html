@@ -8,7 +8,9 @@
     <script>
         (function () {
             const storedTheme = localStorage.getItem("projectflow-theme");
-            document.documentElement.dataset.theme = storedTheme || "dark";
+            const theme = storedTheme || "dark";
+            document.documentElement.dataset.theme = theme;
+            document.documentElement.style.colorScheme = theme;
         })();
     </script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">

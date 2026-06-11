@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const root = document.documentElement;
     const applyTheme = (theme) => {
         root.dataset.theme = theme;
+        root.style.colorScheme = theme;
         localStorage.setItem(themeKey, theme);
     };
     if (themeToggle) {
@@ -34,6 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (!root.dataset.theme) {
         applyTheme(localStorage.getItem(themeKey) || "dark");
+    } else {
+        root.style.colorScheme = root.dataset.theme;
     }
 
     document.querySelectorAll(".messages .message").forEach((message) => {
