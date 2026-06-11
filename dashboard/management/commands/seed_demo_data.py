@@ -28,7 +28,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Demo data seeded successfully."))
         self.stdout.write("Login with username: demo_admin")
         self.stdout.write("Password: demo12345")
-        self.stdout.write(f"Created {len(projects)} projects and {len(tasks)} tasks.")
+        self.stdout.write(f"Created {len(projects)} projects, {len(tasks)} tasks, notifications, and activity logs.")
 
     def _get_demo_user(self):
         User = get_user_model()
@@ -49,139 +49,133 @@ class Command(BaseCommand):
 
     def _clear_existing_demo_data(self, user):
         Project.objects.filter(owner=user, slug__startswith="demo-").delete()
-        Notification.objects.filter(
-            recipient=user,
-            title__in=[
-                "Task due soon",
-                "Review requested",
-                "Blocked task",
-                "Project completed",
-                "New assignment",
-            ],
-        ).delete()
+        Notification.objects.filter(recipient=user, title__startswith="[Demo]").delete()
         ActivityLog.objects.filter(actor=user, metadata__seed_demo=True).delete()
 
     def _create_projects(self, user):
         today = timezone.localdate()
         project_specs = [
             {
-                "name": "Customer Success Portal",
-                "slug": "demo-customer-success-portal",
-                "description": "A client-facing portal for onboarding, support tickets, renewals, and account health tracking.",
+                "name": "AI Resume Analyzer",
+                "slug": "demo-ai-resume-analyzer",
+                "description": "AI-powered resume parser that scores candidates, extracts skills, and recommends matching job roles.",
                 "status": "active",
                 "priority": "critical",
-                "start": today - timedelta(days=35),
-                "due": today + timedelta(days=28),
-                "budget": "85000.00",
+                "start": today - timedelta(days=34),
+                "due": today + timedelta(days=21),
+                "budget": "72000.00",
             },
             {
-                "name": "Mobile App Redesign",
-                "slug": "demo-mobile-app-redesign",
-                "description": "A refreshed mobile experience with cleaner navigation, faster task flows, and improved accessibility.",
+                "name": "E-commerce Platform",
+                "slug": "demo-e-commerce-platform",
+                "description": "Full-stack storefront with product catalog, cart, checkout, payment integration, and order tracking.",
                 "status": "active",
                 "priority": "high",
-                "start": today - timedelta(days=22),
-                "due": today + timedelta(days=45),
-                "budget": "64000.00",
+                "start": today - timedelta(days=48),
+                "due": today + timedelta(days=35),
+                "budget": "95000.00",
             },
             {
-                "name": "Q3 Marketing Automation",
-                "slug": "demo-q3-marketing-automation",
-                "description": "Automated campaign journeys, lead scoring, reporting dashboards, and CRM handoff improvements.",
+                "name": "CRM Dashboard",
+                "slug": "demo-crm-dashboard",
+                "description": "Sales CRM dashboard for leads, deals, pipeline health, team performance, and revenue analytics.",
                 "status": "planning",
                 "priority": "medium",
-                "start": today + timedelta(days=5),
-                "due": today + timedelta(days=70),
-                "budget": "42000.00",
+                "start": today - timedelta(days=8),
+                "due": today + timedelta(days=52),
+                "budget": "56000.00",
             },
             {
-                "name": "Data Warehouse Modernization",
-                "slug": "demo-data-warehouse-modernization",
-                "description": "Migration of legacy reporting pipelines into a scalable warehouse with reliable business metrics.",
-                "status": "paused",
-                "priority": "high",
-                "start": today - timedelta(days=60),
-                "due": today + timedelta(days=30),
-                "budget": "120000.00",
-            },
-            {
-                "name": "Internal HR Workflow System",
-                "slug": "demo-internal-hr-workflow-system",
-                "description": "Self-service employee requests, approval workflows, onboarding checklists, and HR analytics.",
+                "name": "Portfolio Website",
+                "slug": "demo-portfolio-website",
+                "description": "Professional personal portfolio with project case studies, contact workflow, blog, and SEO optimization.",
                 "status": "completed",
                 "priority": "low",
-                "start": today - timedelta(days=95),
-                "due": today - timedelta(days=8),
-                "budget": "38000.00",
+                "start": today - timedelta(days=70),
+                "due": today - timedelta(days=5),
+                "budget": "18000.00",
+            },
+            {
+                "name": "Smart Expense Tracker",
+                "slug": "demo-smart-expense-tracker",
+                "description": "Expense management app with category automation, monthly budgets, alerts, and spending analytics.",
+                "status": "paused",
+                "priority": "high",
+                "start": today - timedelta(days=28),
+                "due": today + timedelta(days=26),
+                "budget": "44000.00",
             },
         ]
 
         projects = []
         for spec in project_specs:
-            project = Project.objects.create(
-                name=spec["name"],
-                slug=spec["slug"],
-                description=spec["description"],
-                owner=user,
-                status=spec["status"],
-                priority=spec["priority"],
-                start_date=spec["start"],
-                due_date=spec["due"],
-                budget=Decimal(spec["budget"]),
+            projects.append(
+                Project.objects.create(
+                    name=spec["name"],
+                    slug=spec["slug"],
+                    description=spec["description"],
+                    owner=user,
+                    status=spec["status"],
+                    priority=spec["priority"],
+                    start_date=spec["start"],
+                    due_date=spec["due"],
+                    budget=Decimal(spec["budget"]),
+                )
             )
-            projects.append(project)
         return projects
 
     def _create_tasks(self, user, projects):
         now = timezone.now()
         today = timezone.localdate()
         task_specs = [
-            (0, "Design customer onboarding dashboard", "Build the main onboarding overview with milestones and account owner context.", "done", "high", -18, now - timedelta(days=4), 8),
-            (0, "Implement ticket escalation workflow", "Create automated routing for high-priority support tickets.", "in_progress", "urgent", 6, None, 12),
-            (0, "Add renewal risk indicators", "Surface account health, product usage, and renewal blockers.", "review", "high", 12, None, 10),
-            (0, "Create customer document center", "Allow customers to access shared onboarding and contract files.", "todo", "medium", 18, None, 7),
-            (1, "Audit mobile navigation patterns", "Review current mobile navigation and document friction points.", "done", "medium", -12, now - timedelta(days=7), 5),
-            (1, "Build redesigned project board view", "Create the mobile board layout with status columns and quick actions.", "in_progress", "high", 9, None, 14),
-            (1, "Optimize mobile task detail page", "Improve task metadata density and responsive readability.", "todo", "medium", 16, None, 6),
-            (1, "Run accessibility contrast review", "Validate color contrast and keyboard focus behavior.", "todo", "high", 21, None, 4),
-            (2, "Map campaign lifecycle stages", "Define the marketing lifecycle from acquisition to handoff.", "done", "medium", -5, now - timedelta(days=2), 6),
-            (2, "Create lead scoring rules", "Score leads by engagement, firmographics, and buying intent.", "in_progress", "high", 14, None, 9),
-            (2, "Draft nurture email sequence", "Prepare email content for evaluation and reactivation journeys.", "todo", "medium", 20, None, 8),
-            (2, "Connect CRM attribution fields", "Sync campaign source data into CRM reporting fields.", "blocked", "urgent", 3, None, 6),
-            (3, "Inventory legacy reporting jobs", "Catalog existing ETL jobs, owners, and downstream dashboards.", "done", "high", -30, now - timedelta(days=15), 10),
-            (3, "Design warehouse star schema", "Model core facts and dimensions for revenue and product analytics.", "review", "high", 7, None, 16),
-            (3, "Migrate product usage pipeline", "Move usage events into the new transformation framework.", "blocked", "urgent", -2, None, 18),
-            (3, "Create data quality checks", "Add freshness, volume, uniqueness, and referential integrity tests.", "todo", "high", 11, None, 8),
-            (4, "Build employee request intake", "Create forms for HR requests and route them to the correct team.", "done", "medium", -42, now - timedelta(days=25), 8),
-            (4, "Implement approval notifications", "Send approval and rejection updates to employees and managers.", "done", "medium", -28, now - timedelta(days=20), 7),
-            (4, "Create onboarding checklist templates", "Add reusable templates for department-specific onboarding.", "done", "low", -18, now - timedelta(days=12), 5),
-            (4, "Publish HR analytics summary", "Finalize reporting cards for requests, SLA, and onboarding completion.", "done", "low", -10, now - timedelta(days=6), 4),
+            (0, "Build login API", "Implement secure authentication endpoints with validation and session handling.", "done", "high", -18, now - timedelta(days=13), 8),
+            (0, "Create resume upload pipeline", "Accept PDF/DOCX resumes and store parsed files for AI processing.", "done", "high", -12, now - timedelta(days=9), 10),
+            (0, "Integrate skills extraction model", "Extract skills, education, experience, and role recommendations from resumes.", "in_progress", "urgent", 5, None, 16),
+            (0, "Create analytics chart", "Show resume score distribution, top skills, and candidate role matches.", "review", "medium", 10, None, 7),
+            (1, "Design dashboard UI", "Create admin dashboard layouts for orders, revenue, products, and inventory.", "done", "high", -20, now - timedelta(days=14), 12),
+            (1, "Build product catalog module", "Add product listing, filtering, categories, and product detail pages.", "in_progress", "high", 6, None, 14),
+            (1, "Implement cart and checkout", "Build cart, checkout validation, shipping options, and payment handoff.", "todo", "urgent", 13, None, 18),
+            (1, "Deploy application", "Configure production settings, static files, database, and Render deployment.", "todo", "high", 20, None, 6),
+            (2, "Create leads pipeline view", "Build Kanban-style lead pipeline with deal value and stage filters.", "todo", "medium", 16, None, 9),
+            (2, "Fix authentication bug", "Resolve login redirects and role-based dashboard access for CRM users.", "blocked", "urgent", 3, None, 5),
+            (2, "Build sales performance cards", "Add revenue, conversion rate, active deals, and monthly targets cards.", "in_progress", "high", 9, None, 8),
+            (2, "Create analytics chart", "Add pipeline value, deal status, and lead source charts using real data.", "todo", "medium", 18, None, 10),
+            (3, "Design landing page", "Create hero, project showcase, skills, and contact sections.", "done", "medium", -42, now - timedelta(days=34), 8),
+            (3, "Add project case studies", "Write and publish case study pages for portfolio projects.", "done", "low", -31, now - timedelta(days=25), 6),
+            (3, "Optimize SEO metadata", "Add page titles, descriptions, sitemap, and structured metadata.", "done", "medium", -18, now - timedelta(days=16), 5),
+            (3, "Deploy application", "Publish the portfolio and validate production performance.", "done", "low", -8, now - timedelta(days=6), 4),
+            (4, "Build expense category rules", "Automatically classify expenses into food, travel, bills, shopping, and savings.", "done", "medium", -15, now - timedelta(days=10), 7),
+            (4, "Create monthly budget alerts", "Notify users when spending approaches monthly category limits.", "in_progress", "high", 4, None, 8),
+            (4, "Design spending insights dashboard", "Create charts for category trends, recurring expenses, and savings rate.", "review", "high", 11, None, 10),
+            (4, "Fix authentication bug", "Correct account session handling and protected route redirects.", "blocked", "urgent", -1, None, 5),
         ]
 
         tasks = []
         for project_index, title, description, status, priority, due_offset, completed_at, estimate in task_specs:
-            task = Task.objects.create(
-                project=projects[project_index],
-                title=title,
-                description=description,
-                assignee=user,
-                reporter=user,
-                status=status,
-                priority=priority,
-                estimate_hours=Decimal(str(estimate)),
-                due_date=today + timedelta(days=due_offset),
-                completed_at=completed_at,
+            tasks.append(
+                Task.objects.create(
+                    project=projects[project_index],
+                    title=title,
+                    description=description,
+                    assignee=user,
+                    reporter=user,
+                    status=status,
+                    priority=priority,
+                    estimate_hours=Decimal(str(estimate)),
+                    due_date=today + timedelta(days=due_offset),
+                    completed_at=completed_at,
+                )
             )
-            tasks.append(task)
         return tasks
 
     def _create_notifications(self, user, tasks):
         notifications = [
-            ("Task due soon", "Implement ticket escalation workflow is due this week.", "warning", tasks[1].get_absolute_url(), False),
-            ("Review requested", "Add renewal risk indicators is ready for review.", "info", tasks[2].get_absolute_url(), False),
-            ("Blocked task", "Connect CRM attribution fields needs integration access.", "danger", tasks[11].get_absolute_url(), False),
-            ("Project completed", "Internal HR Workflow System has been completed successfully.", "success", tasks[19].get_absolute_url(), True),
-            ("New assignment", "Create data quality checks has been assigned to you.", "info", tasks[15].get_absolute_url(), False),
+            ("[Demo] Urgent bug blocked", "CRM Dashboard authentication bug is blocking QA sign-off.", "danger", tasks[9].get_absolute_url(), False),
+            ("[Demo] Task due soon", "Smart Expense Tracker budget alerts are due this week.", "warning", tasks[17].get_absolute_url(), False),
+            ("[Demo] Review requested", "AI Resume Analyzer analytics chart is ready for review.", "info", tasks[3].get_absolute_url(), False),
+            ("[Demo] Deployment pending", "E-commerce Platform deployment task is waiting for production setup.", "warning", tasks[7].get_absolute_url(), False),
+            ("[Demo] Project completed", "Portfolio Website has been completed and deployed.", "success", tasks[15].get_absolute_url(), True),
+            ("[Demo] New assignment", "Product catalog module has been assigned to the demo admin.", "info", tasks[5].get_absolute_url(), False),
         ]
 
         for title, message, level, link, is_read in notifications:
@@ -209,7 +203,9 @@ class Command(BaseCommand):
             )
 
         for task in tasks:
-            action = "status_changed" if task.status != "done" else "updated"
+            action = "updated"
+            if task.status in {"in_progress", "review", "blocked"}:
+                action = "status_changed"
             ActivityLog.objects.create(
                 actor=user,
                 action=action,
