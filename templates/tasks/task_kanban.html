@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Kanban | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Visual workflow</p>
+        <h1>Kanban Board</h1>
+        <p class="page-subtitle">Drag tasks between columns to update their status.</p>
+    </div>
+    <div class="actions">
+        <a class="button ghost" href="{% url 'tasks:calendar' %}">Calendar</a>
+        <a class="button primary" href="{% url 'tasks:create' %}">New Task</a>
+    </div>
+</section>
+
+<form class="csrf-token-form">{% csrf_token %}</form>
+<div class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+<section class="kanban-board" data-kanban-board>
+    {% for column in kanban_columns %}
+        <article class="kanban-column" data-status="{{ column.status }}">
+            <header class="kanban-column-header">
+                <div>
+                    <span class="kanban-dot status-dot-{{ column.status }}"></span>
+                    <h2>{{ column.label }}</h2>
+                </div>
+                <strong>{{ column.tasks|length }}</strong>
+            </header>
+            <div class="kanban-dropzone" data-status="{{ column.status }}">
+                {% for task in column.tasks %}
+                    <article
+                        class="kanban-card"
+                        draggable="true"
+                        data-task-id="{{ task.pk }}"
+                        data-current-status="{{ task.status }}"
+                        data-update-url="{% url 'tasks:update_status' task.pk %}"
+                    >
+                        <div class="kanban-card-topline">
+                            <a href="{{ task.get_absolute_url }}"><strong>{{ task.title }}</strong></a>
+                            <span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span>
+                        </div>
+                        <small class="kanban-project">{{ task.project.name }}</small>
+                        <div class="kanban-meta">
+                            <span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                            <span class="due-badge {% if task.due_date and task.status != 'done' %}due-active{% endif %}">
+                                {{ task.due_date|default:"No date" }}
+                            </span>
+                        </div>
+                        <div class="kanban-assignee">
+                            <span class="avatar small-avatar">{{ task.assignee.username|default:"U"|first|upper }}</span>
+                            <span>{{ task.assignee|default:"Unassigned" }}</span>
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="kanban-empty">No tasks</div>
+                {% endfor %}
+            </div>
+        </article>
+    {% endfor %}
+</section>
+{% endblock %}

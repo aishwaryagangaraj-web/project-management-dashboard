@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Deadline calendar</p>
+        <h1>{{ current_month|date:"F Y" }}</h1>
+        <p class="page-subtitle">Review upcoming task deadlines by month.</p>
+    </div>
+    <div class="actions">
+        <a class="button ghost" href="{% url 'tasks:calendar' %}?year={{ previous_month.year }}&month={{ previous_month.month }}">Previous</a>
+        <a class="button ghost" href="{% url 'tasks:calendar' %}">Today</a>
+        <a class="button primary" href="{% url 'tasks:calendar' %}?year={{ next_month.year }}&month={{ next_month.month }}">Next</a>
+    </div>
+</section>
+
+<section class="calendar-shell">
+    <div class="calendar-weekdays">
+        <span>Mon</span>
+        <span>Tue</span>
+        <span>Wed</span>
+        <span>Thu</span>
+        <span>Fri</span>
+        <span>Sat</span>
+        <span>Sun</span>
+    </div>
+    <div class="calendar-grid">
+        {% for week in calendar_weeks %}
+            {% for day in week %}
+                <article class="calendar-day {% if not day.in_month %}muted-day{% endif %} {% if day.is_today %}today{% endif %}">
+                    <header>
+                        <strong>{{ day.date.day }}</strong>
+                        {% if day.is_today %}<span>Today</span>{% endif %}
+                    </header>
+                    <div class="calendar-task-list">
+                        {% for task in day.tasks %}
+                            <a
+                                class="calendar-task {% if task.due_date < today and task.status != 'done' %}overdue{% endif %}"
+                                href="{{ task.get_absolute_url }}"
+                            >
+                                <strong>{{ task.title }}</strong>
+                                <small>{{ task.project.name }}</small>
+                                <span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                            </a>
+                        {% empty %}
+                            <span class="calendar-empty-slot">No deadlines</span>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

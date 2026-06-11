@@ -14,6 +14,19 @@
     </div>
 </section>
 
+<section class="quick-link-grid">
+    <a class="quick-link-card" href="{% url 'tasks:kanban' %}">
+        <span class="quick-link-icon">K</span>
+        <strong>Open Kanban</strong>
+        <small>Move tasks through workflow columns.</small>
+    </a>
+    <a class="quick-link-card" href="{% url 'tasks:calendar' %}">
+        <span class="quick-link-icon">C</span>
+        <strong>Open Calendar</strong>
+        <small>Review deadlines by month.</small>
+    </a>
+</section>
+
 <section class="stats-grid">
     <article class="stat-card accent-blue">
         <span>Total Projects</span>

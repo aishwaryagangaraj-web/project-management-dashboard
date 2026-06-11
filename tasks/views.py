@@ -1,5 +1,10 @@
+import calendar
+import json
+from datetime import date
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -71,6 +76,112 @@ class TaskListView(TaskQuerysetMixin, ListView):
             "due": self.request.GET.get("due", ""),
         }
         return context
+
+
+class TaskKanbanView(TaskQuerysetMixin, ListView):
+    model = Task
+    template_name = "tasks/task_kanban.html"
+    context_object_name = "tasks"
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("project", "assignee")
+            .order_by("due_date", "-priority", "-updated_at")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        columns = []
+        for status, label in Task.STATUS_CHOICES:
+            columns.append(
+                {
+                    "status": status,
+                    "label": label,
+                    "tasks": [task for task in context["tasks"] if task.status == status],
+                }
+            )
+        context["kanban_columns"] = columns
+        context["allowed_statuses"] = [status for status, _label in Task.STATUS_CHOICES]
+        return context
+
+
+class TaskCalendarView(TaskQuerysetMixin, ListView):
+    model = Task
+    template_name = "tasks/task_calendar.html"
+    context_object_name = "tasks"
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("project", "assignee")
+            .filter(due_date__isnull=False)
+            .order_by("due_date", "status")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        year = self._get_int_param("year", today.year)
+        month = self._get_int_param("month", today.month)
+        try:
+            current_month = date(year, month, 1)
+        except ValueError:
+            current_month = date(today.year, today.month, 1)
+
+        _, last_day = calendar.monthrange(current_month.year, current_month.month)
+        month_start = current_month
+        month_end = date(current_month.year, current_month.month, last_day)
+        tasks = list(self.get_queryset().filter(due_date__gte=month_start, due_date__lte=month_end))
+        tasks_by_date = {}
+        for task in tasks:
+            tasks_by_date.setdefault(task.due_date, []).append(task)
+
+        weeks = []
+        for week in calendar.Calendar(firstweekday=0).monthdatescalendar(current_month.year, current_month.month):
+            weeks.append(
+                [
+                    {
+                        "date": day,
+                        "in_month": day.month == current_month.month,
+                        "is_today": day == today,
+                        "tasks": tasks_by_date.get(day, []),
+                    }
+                    for day in week
+                ]
+            )
+
+        previous_month = self._shift_month(current_month, -1)
+        next_month = self._shift_month(current_month, 1)
+        context.update(
+            {
+                "calendar_weeks": weeks,
+                "current_month": current_month,
+                "previous_month": previous_month,
+                "next_month": next_month,
+                "today": today,
+            }
+        )
+        return context
+
+    def _get_int_param(self, name, default):
+        try:
+            return int(self.request.GET.get(name, default))
+        except (TypeError, ValueError):
+            return default
+
+    def _shift_month(self, value, offset):
+        month = value.month + offset
+        year = value.year
+        if month < 1:
+            month = 12
+            year -= 1
+        elif month > 12:
+            month = 1
+            year += 1
+        return date(year, month, 1)
 
 
 class TaskDetailView(TaskQuerysetMixin, DetailView):
@@ -184,3 +295,44 @@ class TaskCompleteView(TaskQuerysetMixin, View):
         )
         messages.success(request, "Task marked as completed.")
         return redirect(task.get_absolute_url())
+
+
+class TaskStatusUpdateView(TaskQuerysetMixin, View):
+    allowed_statuses = {status for status, _label in Task.STATUS_CHOICES}
+
+    def post(self, request, *args, **kwargs):
+        task = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse({"ok": False, "error": "Invalid JSON payload."}, status=400)
+
+        status = payload.get("status")
+        if status not in self.allowed_statuses:
+            return JsonResponse({"ok": False, "error": "Invalid task status."}, status=400)
+
+        if task.status == status:
+            return JsonResponse({"ok": True, "status": task.status, "message": "Task already has this status."})
+
+        old_status = task.status
+        task.status = status
+        task.completed_at = timezone.now() if status == "done" else None
+        task.save(update_fields=["status", "completed_at", "updated_at"])
+        ActivityLog.objects.create(
+            actor=request.user,
+            action="status_changed",
+            object_type="task",
+            object_id=task.pk,
+            metadata={
+                "object_name": task.title,
+                "message": f"Moved task {task.title} from {old_status} to {status}",
+            },
+        )
+        return JsonResponse(
+            {
+                "ok": True,
+                "status": task.status,
+                "status_label": task.get_status_display(),
+                "message": f"{task.title} moved to {task.get_status_display()}.",
+            }
+        )

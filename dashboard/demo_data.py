@@ -55,6 +55,7 @@ def create_demo_data():
 
     projects = create_projects(user)
     tasks = create_tasks(user, projects)
+    clear_existing_demo_events(user)
     notifications = create_notifications(user, tasks)
     activity_logs = create_activity_logs(user, projects, tasks)
 
@@ -87,9 +88,13 @@ def get_demo_user():
 
 def clear_existing_demo_data(user):
     Project.objects.filter(owner=user, slug__startswith="demo-").delete()
+    clear_existing_demo_events(user)
+    DashboardPreference.objects.filter(user=user).delete()
+
+
+def clear_existing_demo_events(user):
     Notification.objects.filter(recipient=user, title__startswith="[Demo]").delete()
     ActivityLog.objects.filter(actor=user, metadata__seed_demo=True).delete()
-    DashboardPreference.objects.filter(user=user).delete()
 
 
 def create_projects(user):

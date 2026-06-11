@@ -7,6 +7,113 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    const kanbanBoard = document.querySelector("[data-kanban-board]");
+    if (kanbanBoard) {
+        const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
+        const csrfToken = csrfInput ? csrfInput.value : "";
+        let draggedCard = null;
+
+        const showToast = (message, type = "success") => {
+            const stack = document.querySelector(".toast-stack");
+            if (!stack) {
+                return;
+            }
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            stack.appendChild(toast);
+            window.setTimeout(() => toast.remove(), 3200);
+        };
+
+        const refreshColumn = (zone) => {
+            const column = zone.closest(".kanban-column");
+            const count = column ? column.querySelector(".kanban-column-header strong") : null;
+            const cards = zone.querySelectorAll(".kanban-card");
+            const empty = zone.querySelector(".kanban-empty");
+            if (count) {
+                count.textContent = cards.length;
+            }
+            if (empty && cards.length > 0) {
+                empty.remove();
+            }
+            if (!empty && cards.length === 0) {
+                const emptyState = document.createElement("div");
+                emptyState.className = "kanban-empty";
+                emptyState.textContent = "No tasks";
+                zone.appendChild(emptyState);
+            }
+        };
+
+        kanbanBoard.querySelectorAll(".kanban-card").forEach((card) => {
+            card.addEventListener("dragstart", () => {
+                draggedCard = card;
+                card.classList.add("is-dragging");
+            });
+            card.addEventListener("dragend", () => {
+                card.classList.remove("is-dragging");
+                draggedCard = null;
+            });
+        });
+
+        kanbanBoard.querySelectorAll(".kanban-dropzone").forEach((zone) => {
+            zone.addEventListener("dragover", (event) => {
+                event.preventDefault();
+                zone.classList.add("is-over");
+            });
+            zone.addEventListener("dragleave", () => {
+                zone.classList.remove("is-over");
+            });
+            zone.addEventListener("drop", async (event) => {
+                event.preventDefault();
+                zone.classList.remove("is-over");
+                if (!draggedCard) {
+                    return;
+                }
+
+                const card = draggedCard;
+                const previousParent = card.parentElement;
+                const previousStatus = card.dataset.currentStatus;
+                const nextStatus = zone.dataset.status;
+                if (previousStatus === nextStatus) {
+                    zone.appendChild(card);
+                    refreshColumn(zone);
+                    return;
+                }
+
+                zone.appendChild(card);
+                refreshColumn(zone);
+                refreshColumn(previousParent);
+                try {
+                    const response = await fetch(card.dataset.updateUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken,
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                        body: JSON.stringify({ status: nextStatus }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.ok) {
+                        throw new Error(data.error || "Could not update task status.");
+                    }
+                    card.dataset.currentStatus = nextStatus;
+                    const badge = card.querySelector(".kanban-card-topline .badge");
+                    if (badge) {
+                        badge.className = `badge status-${nextStatus}`;
+                        badge.textContent = data.status_label;
+                    }
+                    showToast(data.message || "Task status updated.");
+                } catch (error) {
+                    previousParent.appendChild(card);
+                    refreshColumn(zone);
+                    refreshColumn(previousParent);
+                    showToast(error.message || "Task status update failed.", "error");
+                }
+            });
+        });
+    }
+
     if (!window.Chart || !window.dashboardCharts) {
         return;
     }
