@@ -172,6 +172,398 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll("[data-count-to]").forEach(animateCounter);
 
+    const demoModal = document.querySelector("[data-demo-modal]");
+    if (demoModal) {
+        const demoSteps = [
+            {
+                title: "Landing page",
+                subtitle: "Brand, value proposition, and quick entry points.",
+                label: "Hero",
+                render: () => `
+                    <div class="demo-stage-shell demo-stage-shell--hero">
+                        <div class="demo-stage-focus">Landing</div>
+                        <div class="demo-stage-grid">
+                            <div class="demo-stage-panel demo-stage-panel--wide">
+                                <span class="demo-stage-kicker">ProjectFlow</span>
+                                <h4>Project management dashboard</h4>
+                                <p>Hero section, preview image, and quick actions for login and registration.</p>
+                                <div class="demo-stage-badges">
+                                    <span>Get Started</span><span>Login</span><span>Dashboard preview</span>
+                                </div>
+                            </div>
+                            <div class="demo-stage-preview-image">
+                                <img src="/static/images/dashboard-preview.png" alt="ProjectFlow dashboard preview">
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Register/Login",
+                subtitle: "Clean auth split layout with onboarding metrics.",
+                label: "Auth",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Auth</div>
+                        <div class="demo-stage-split">
+                            <section class="demo-auth-visual">
+                                <span class="demo-stage-kicker">Secure access</span>
+                                <h4>Sign in to ProjectFlow</h4>
+                                <p>Role-based access, token-backed API access, and a polished sign-up flow.</p>
+                                <div class="demo-stage-badges">
+                                    <span>Admin</span><span>Manager</span><span>Member</span>
+                                </div>
+                            </section>
+                            <section class="demo-auth-form">
+                                <div class="demo-form-line"></div>
+                                <div class="demo-form-line short"></div>
+                                <div class="demo-form-line"></div>
+                                <button class="button primary compact" type="button">Create account</button>
+                            </section>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Dashboard overview",
+                subtitle: "Quick metrics and recent work in one screen.",
+                label: "Home",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Home</div>
+                        <div class="demo-dashboard-mock">
+                            <div class="demo-metric-row">
+                                <div class="demo-metric"></div>
+                                <div class="demo-metric"></div>
+                                <div class="demo-metric"></div>
+                            </div>
+                            <div class="demo-chart-row">
+                                <div class="demo-chart-box"></div>
+                                <div class="demo-chart-box"></div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Create Project",
+                subtitle: "Project setup form with due date and ownership.",
+                label: "Project",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Project</div>
+                        <div class="demo-form-layout">
+                            <div class="demo-form-card">
+                                <span class="demo-stage-kicker">Create project</span>
+                                <div class="demo-form-line"></div>
+                                <div class="demo-form-line"></div>
+                                <div class="demo-form-line short"></div>
+                            </div>
+                            <div class="demo-side-card">
+                                <strong>Owned by manager</strong>
+                                <p>Progress, status, and delivery window are tracked immediately.</p>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Add Task",
+                subtitle: "Task creation with assignee, priority, and attachment.",
+                label: "Task",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Task</div>
+                        <div class="demo-form-layout">
+                            <div class="demo-form-card">
+                                <span class="demo-stage-kicker">Add task</span>
+                                <div class="demo-form-line"></div>
+                                <div class="demo-form-line"></div>
+                                <div class="demo-form-line short"></div>
+                                <div class="demo-badge-row">
+                                    <span>Priority</span><span>Assignee</span><span>Attachment</span>
+                                </div>
+                            </div>
+                            <div class="demo-side-card">
+                                <strong>Visible in task list</strong>
+                                <p>Comments, files, and status changes stay attached to the work item.</p>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Kanban drag-drop",
+                subtitle: "Move tasks across workflow columns.",
+                label: "Kanban",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Kanban</div>
+                        <div class="demo-kanban-mock">
+                            <div class="demo-kanban-column"><span>To Do</span><div class="demo-kanban-card"></div><div class="demo-kanban-card"></div></div>
+                            <div class="demo-kanban-column active"><span>In Progress</span><div class="demo-kanban-card dragging"></div></div>
+                            <div class="demo-kanban-column"><span>Done</span><div class="demo-kanban-card small"></div></div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Calendar view",
+                subtitle: "Deadlines shown on a responsive monthly grid.",
+                label: "Calendar",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Calendar</div>
+                        <div class="demo-calendar-mock">
+                            <div class="demo-calendar-head"></div>
+                            <div class="demo-calendar-grid">
+                                ${Array.from({ length: 35 }, (_, index) => `<div class="demo-calendar-cell${index === 10 ? " today" : ""}${index === 16 || index === 24 ? " overdue" : ""}"></div>`).join("")}
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Analytics dashboard",
+                subtitle: "KPI cards, charts, and team insights.",
+                label: "Analytics",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Analytics</div>
+                        <div class="demo-analytics-mock">
+                            <div class="demo-metric-row compact">
+                                <div class="demo-metric"></div>
+                                <div class="demo-metric"></div>
+                                <div class="demo-metric"></div>
+                            </div>
+                            <div class="demo-chart-row">
+                                <div class="demo-chart-box tall"></div>
+                                <div class="demo-chart-box tall"></div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Export PDF",
+                subtitle: "Generate professional reports from the analytics view.",
+                label: "PDF",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Export</div>
+                        <div class="demo-report-mock">
+                            <div class="demo-report-cover"></div>
+                            <div class="demo-report-lines">
+                                <div></div><div></div><div></div><div></div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+            {
+                title: "Dark / Light toggle",
+                subtitle: "Theme control with persistence across the app.",
+                label: "Theme",
+                render: () => `
+                    <div class="demo-stage-shell">
+                        <div class="demo-stage-focus">Theme</div>
+                        <div class="demo-theme-mock">
+                            <div class="demo-theme-panel dark">
+                                <span>Dark</span>
+                                <div class="demo-theme-preview"></div>
+                            </div>
+                            <div class="demo-theme-toggle">Toggle</div>
+                            <div class="demo-theme-panel light">
+                                <span>Light</span>
+                                <div class="demo-theme-preview"></div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            },
+        ];
+
+        const demoStage = demoModal.querySelector("[data-demo-stage]");
+        const demoStepsList = demoModal.querySelector("[data-demo-steps]");
+        const demoProgressLabel = demoModal.querySelector("[data-demo-progress-label]");
+        const demoProgressBar = demoModal.querySelector("[data-demo-progress-bar]");
+        const demoPlayButton = demoModal.querySelector("[data-demo-play]");
+        const demoPrevButton = demoModal.querySelector("[data-demo-prev]");
+        const demoNextButton = demoModal.querySelector("[data-demo-next]");
+        const openButtons = document.querySelectorAll("[data-demo-open]");
+        const closeButtons = demoModal.querySelectorAll("[data-demo-close]");
+
+        let currentStep = 0;
+        let autoplayTimer = null;
+        let autoplayEnabled = true;
+        let demoFailed = false;
+
+        const stopAutoplay = () => {
+            if (autoplayTimer) {
+                window.clearInterval(autoplayTimer);
+                autoplayTimer = null;
+            }
+        };
+
+        const startAutoplay = () => {
+            stopAutoplay();
+            if (!autoplayEnabled || demoFailed) {
+                return;
+            }
+            autoplayTimer = window.setInterval(() => {
+                try {
+                    currentStep = (currentStep + 1) % demoSteps.length;
+                    renderStep(currentStep);
+                } catch (error) {
+                    demoFailed = true;
+                    renderFallback();
+                    stopAutoplay();
+                }
+            }, 4200);
+        };
+
+        const renderFallback = () => {
+            if (!demoStage) {
+                return;
+            }
+            demoStage.innerHTML = `
+                <div class="demo-fallback">
+                    <strong>Interactive Product Demo Coming Soon</strong>
+                    <p>The guided tour could not be initialized. The landing page preview remains available above.</p>
+                </div>
+            `;
+        };
+
+        const renderStep = (index) => {
+            const step = demoSteps[index];
+            if (!step || !demoStage || !demoStepsList || !demoProgressLabel || !demoProgressBar) {
+                throw new Error("Demo tour could not render.");
+            }
+
+            demoStage.classList.remove("is-flipping");
+            window.requestAnimationFrame(() => demoStage.classList.add("is-flipping"));
+            demoStage.innerHTML = `
+                <div class="demo-stage-header">
+                    <span class="demo-stage-index">${String(index + 1).padStart(2, "0")}</span>
+                    <div>
+                        <strong>${step.title}</strong>
+                        <p>${step.subtitle}</p>
+                    </div>
+                </div>
+                ${step.render()}
+            `;
+
+            demoStepsList.innerHTML = demoSteps
+                .map((item, stepIndex) => `
+                    <button class="demo-step-item ${stepIndex === index ? "active" : ""}" type="button" data-demo-step="${stepIndex}">
+                        <span>${String(stepIndex + 1).padStart(2, "0")}</span>
+                        <strong>${item.label}</strong>
+                        <small>${item.title}</small>
+                    </button>
+                `)
+                .join("");
+
+            demoProgressLabel.textContent = `Step ${index + 1} of ${demoSteps.length}`;
+            demoProgressBar.style.width = `${((index + 1) / demoSteps.length) * 100}%`;
+            if (demoPlayButton) {
+                demoPlayButton.textContent = autoplayEnabled ? "Pause" : "Play";
+            }
+        };
+
+        const openDemo = () => {
+            try {
+                demoFailed = false;
+                autoplayEnabled = true;
+                currentStep = 0;
+                demoModal.hidden = false;
+                demoModal.setAttribute("aria-hidden", "false");
+                document.body.classList.add("demo-tour-open");
+                renderStep(currentStep);
+                startAutoplay();
+            } catch (error) {
+                demoFailed = true;
+                demoModal.hidden = false;
+                demoModal.setAttribute("aria-hidden", "false");
+                document.body.classList.add("demo-tour-open");
+                renderFallback();
+            }
+        };
+
+        const closeDemo = () => {
+            stopAutoplay();
+            demoModal.hidden = true;
+            demoModal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("demo-tour-open");
+        };
+
+        openButtons.forEach((button) => button.addEventListener("click", openDemo));
+        closeButtons.forEach((button) => button.addEventListener("click", closeDemo));
+        demoModal.addEventListener("click", (event) => {
+            if (event.target === demoModal || event.target.matches("[data-demo-close]")) {
+                closeDemo();
+            }
+        });
+
+        if (demoStepsList) {
+            demoStepsList.addEventListener("click", (event) => {
+                const button = event.target.closest("[data-demo-step]");
+                if (!button) {
+                    return;
+                }
+                currentStep = Number.parseInt(button.dataset.demoStep, 10) || 0;
+                renderStep(currentStep);
+                startAutoplay();
+            });
+        }
+
+        if (demoPrevButton) {
+            demoPrevButton.addEventListener("click", () => {
+                currentStep = (currentStep - 1 + demoSteps.length) % demoSteps.length;
+                renderStep(currentStep);
+                startAutoplay();
+            });
+        }
+
+        if (demoNextButton) {
+            demoNextButton.addEventListener("click", () => {
+                currentStep = (currentStep + 1) % demoSteps.length;
+                renderStep(currentStep);
+                startAutoplay();
+            });
+        }
+
+        if (demoPlayButton) {
+            demoPlayButton.addEventListener("click", () => {
+                autoplayEnabled = !autoplayEnabled;
+                if (autoplayEnabled && !demoFailed) {
+                    startAutoplay();
+                } else {
+                    stopAutoplay();
+                }
+                demoPlayButton.textContent = autoplayEnabled ? "Pause" : "Play";
+            });
+        }
+
+        window.addEventListener("keydown", (event) => {
+            if (demoModal.hidden) {
+                return;
+            }
+            if (event.key === "Escape") {
+                closeDemo();
+            }
+            if (event.key === "ArrowRight") {
+                currentStep = (currentStep + 1) % demoSteps.length;
+                renderStep(currentStep);
+                startAutoplay();
+            }
+            if (event.key === "ArrowLeft") {
+                currentStep = (currentStep - 1 + demoSteps.length) % demoSteps.length;
+                renderStep(currentStep);
+                startAutoplay();
+            }
+        });
+    }
+
     if (!window.Chart) {
         return;
     }

@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.shortcuts import render
-from django.conf import settings
 from django.views.generic import TemplateView
 
 from accounts.access import can_create_project, can_create_task, is_admin, user_role, visible_tasks_queryset
@@ -28,8 +27,6 @@ class HomeDashboardView(TemplateView):
                 "public_task_count": Task.objects.count(),
                 "public_member_count": get_user_model().objects.count(),
                 "public_role": "Administrator" if is_admin(self.request.user) else "Guest",
-                "demo_video_url": settings.DEMO_VIDEO_URL,
-                "demo_video_thumbnail": "images/dashboard-preview.png",
             }
 
         context = super().get_context_data(**kwargs)

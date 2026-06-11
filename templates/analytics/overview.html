@@ -18,7 +18,7 @@
 
 <section class="analytics-kpi-grid">
     {% for card in kpi_cards %}
-        <article class="kpi-card glass-card {{ card.tone }}">
+        <article class="kpi-card analytics-kpi-card glass-card {{ card.tone }}">
             <div class="kpi-card__header">
                 <span class="kpi-icon" aria-hidden="true">{{ card.icon }}</span>
                 <div class="kpi-copy">
@@ -34,7 +34,7 @@
                     {% if card.trend >= 0 %}+{% endif %}{{ card.trend }}%
                 </span>
             </div>
-            <canvas id="kpi-sparkline-{{ card.id }}" class="kpi-sparkline" aria-label="{{ card.label }} trend chart"></canvas>
+            <canvas id="kpi-sparkline-{{ card.id }}" class="kpi-sparkline kpi-mini-chart" aria-label="{{ card.label }} trend chart"></canvas>
         </article>
     {% endfor %}
 </section>
@@ -96,7 +96,7 @@
 </section>
 
 <section class="analytics-chart-grid">
-    <article class="card analytics-card chart-card glass-card">
+    <article class="card analytics-card analytics-chart-card chart-card glass-card">
         <div class="card-header">
             <h2>Task Status</h2>
             <span class="badge">Interactive doughnut</span>
@@ -106,7 +106,7 @@
         </div>
     </article>
 
-    <article class="card analytics-card chart-card glass-card">
+    <article class="card analytics-card analytics-chart-card chart-card glass-card">
         <div class="card-header">
             <h2>Project Status</h2>
             <span class="badge">Portfolio view</span>
@@ -116,17 +116,7 @@
         </div>
     </article>
 
-    <article class="card analytics-card chart-card wide glass-card">
-        <div class="card-header">
-            <h2>Weekly Task Flow</h2>
-            <span class="badge">Stacked bar</span>
-        </div>
-        <div class="chart-container">
-            <canvas id="weeklyStackChart"></canvas>
-        </div>
-    </article>
-
-    <article class="card analytics-card chart-card glass-card">
+    <article class="card analytics-card analytics-chart-card chart-card glass-card">
         <div class="card-header">
             <h2>Productivity Trend</h2>
             <span class="badge">Area chart</span>
@@ -136,7 +126,17 @@
         </div>
     </article>
 
-    <article class="card analytics-card chart-card glass-card">
+    <article class="card analytics-card analytics-chart-card chart-card wide glass-card">
+        <div class="card-header">
+            <h2>Weekly Task Flow</h2>
+            <span class="badge">Stacked bar</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="weeklyStackChart"></canvas>
+        </div>
+    </article>
+
+    <article class="card analytics-card analytics-chart-card chart-card glass-card">
         <div class="card-header">
             <h2>Burndown</h2>
             <span class="badge">Delivery forecast</span>
@@ -146,7 +146,7 @@
         </div>
     </article>
 
-    <article class="card analytics-card chart-card glass-card">
+    <article class="card analytics-card analytics-chart-card chart-card glass-card">
         <div class="card-header">
             <h2>Task Timeline</h2>
             <span class="badge">Completion flow</span>
@@ -156,7 +156,7 @@
         </div>
     </article>
 
-    <article class="card analytics-card chart-card wide glass-card">
+    <article class="card analytics-card analytics-chart-card chart-card wide glass-card">
         <div class="card-header">
             <h2>Workload Distribution</h2>
             <span class="badge">Team balance</span>

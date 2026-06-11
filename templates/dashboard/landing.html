@@ -68,42 +68,56 @@
 
 <section class="demo-section" id="demo">
     <div class="section-heading">
-        <p class="eyebrow">Demo video</p>
+        <p class="eyebrow">Demo experience</p>
         <h2>Watch the product walkthrough directly in the page.</h2>
     </div>
-    <div class="demo-video-card glass-card">
-        {% if demo_video_url %}
-            <div class="demo-video-frame">
-                <iframe
-                    src="{{ demo_video_url }}"
-                    title="ProjectFlow demo video"
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen
-                    referrerpolicy="strict-origin-when-cross-origin"
-                ></iframe>
+    <div class="demo-tour-card glass-card">
+        <div class="demo-tour-copy">
+            <p class="eyebrow">Interactive demo</p>
+            <h3>Watch Product Demo</h3>
+            <p>
+                Launch a guided walkthrough that auto-steps through the live product flow using the app's own UI
+                patterns and dashboard preview asset.
+            </p>
+            <div class="hero-actions">
+                <button class="button primary" type="button" data-demo-open>Watch Product Demo</button>
+                <span class="demo-tour-hint">Autoplay mode enabled</span>
             </div>
-            <div class="demo-video-meta">
-                <strong>ProjectFlow demo video</strong>
-                <p>Use the embedded walkthrough to present the app flow during demos and interviews.</p>
-            </div>
-            <small class="demo-video-note">Embedded video playback works directly on this page.</small>
-        {% else %}
-            <div class="demo-video-fallback">
-                <img src="{% static demo_video_thumbnail %}" alt="ProjectFlow demo thumbnail">
-                <div class="demo-video-fallback__copy">
-                    <strong>Demo video coming soon</strong>
-                    <p>Preview the product layout here while the final walkthrough is being recorded.</p>
-                </div>
-            </div>
-            <div class="demo-video-meta">
-                <strong>Demo video coming soon</strong>
-                <p>Set <code>DEMO_VIDEO_URL</code> to enable the live YouTube embed.</p>
-            </div>
-            <small class="demo-video-note">A thumbnail is shown until the video is configured.</small>
-        {% endif %}
+        </div>
+        <div class="demo-tour-preview">
+            <img src="{% static 'images/dashboard-preview.png' %}" alt="ProjectFlow product preview">
+            <div class="demo-tour-preview-chip">Auto-generated product walkthrough</div>
+        </div>
     </div>
 </section>
+
+<div class="demo-tour-modal" data-demo-modal hidden aria-hidden="true">
+    <div class="demo-tour-modal__backdrop" data-demo-close></div>
+    <div class="demo-tour-modal__panel" role="dialog" aria-modal="true" aria-labelledby="demo-tour-title">
+        <header class="demo-tour-modal__header">
+            <div>
+                <p class="eyebrow">Product demo</p>
+                <h3 id="demo-tour-title">ProjectFlow guided walkthrough</h3>
+            </div>
+            <button class="button ghost compact" type="button" data-demo-close aria-label="Close demo">Close</button>
+        </header>
+        <div class="demo-tour-modal__content">
+            <aside class="demo-tour-steps" data-demo-steps></aside>
+            <main class="demo-tour-stage" data-demo-stage></main>
+        </div>
+        <footer class="demo-tour-modal__footer">
+            <div class="demo-tour-progress">
+                <span data-demo-progress-label>Step 1 of 10</span>
+                <div class="demo-tour-progressbar"><span data-demo-progress-bar></span></div>
+            </div>
+            <div class="demo-tour-controls">
+                <button class="button ghost compact" type="button" data-demo-prev>Previous</button>
+                <button class="button primary compact" type="button" data-demo-play>Pause</button>
+                <button class="button ghost compact" type="button" data-demo-next>Next</button>
+            </div>
+        </footer>
+    </div>
+</div>
 
 <section class="cta-section">
     <div>
