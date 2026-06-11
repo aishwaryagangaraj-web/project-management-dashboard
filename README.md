@@ -14,7 +14,7 @@ https://project-management-dashboard-j8ih.onrender.com
 ## 📸 Screenshots
 
 ### Landing Page
-
+![alt text](<Screenshot 2026-06-11 232858.png>)
 
 ### Dashboard
 
@@ -26,11 +26,11 @@ https://project-management-dashboard-j8ih.onrender.com
 
 ### Analytics Dashboard
 
-(Add screenshot here)
+![alt text](<Screenshot 2026-06-11 233757.png>)
 
 ### PDF Export
 
-(Add screenshot here)
+![alt text](<Screenshot 2026-06-11 234020.png>)
 
 ---
 
