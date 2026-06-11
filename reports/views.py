@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -41,9 +41,18 @@ class TaskReportView(LoginRequiredMixin, View):
 class AnalyticsReportView(LoginRequiredMixin, View):
     def get(self, request):
         user = request.user
-        projects = visible_projects_queryset(user, Project.objects.all())
-        tasks = visible_tasks_queryset(user, Task.objects.all())
-        projects_by_status = list(projects.values("status").annotate(total=Count("id")).order_by("status"))
+        projects = visible_projects_queryset(
+            user,
+            Project.objects.select_related("owner").prefetch_related("tasks"),
+        ).annotate(
+            total_tasks=Count("tasks", distinct=True),
+            completed_tasks=Count("tasks", filter=Q(tasks__status="done"), distinct=True),
+        )
+        tasks = visible_tasks_queryset(
+            user,
+            Task.objects.select_related("project", "assignee", "reporter", "project__owner"),
+        )
+        projects_by_status = list(projects.values("status").annotate(total=Count("id", distinct=True)).order_by("status"))
         tasks_by_status = list(tasks.values("status").annotate(total=Count("id")).order_by("status"))
         monthly_completion = list(
             tasks.filter(status="done", completed_at__isnull=False)
@@ -52,13 +61,85 @@ class AnalyticsReportView(LoginRequiredMixin, View):
             .annotate(total=Count("id"))
             .order_by("month")
         )
+        today = Task.today()
+        project_rows = [
+            {
+                "name": project.name,
+                "progress": project.progress,
+                "status": project.status,
+                "status_display": project.get_status_display(),
+                "total_tasks": getattr(project, "total_tasks", 0),
+                "completed_tasks": getattr(project, "completed_tasks", 0),
+                "due_date": project.due_date,
+            }
+            for project in projects.order_by("-updated_at")
+        ]
+        task_insights = {
+            "high_priority": [
+                {
+                    "title": task.title,
+                    "project": task.project.name,
+                    "status": task.status,
+                    "status_display": task.get_status_display(),
+                    "priority": task.priority,
+                    "priority_display": task.get_priority_display(),
+                    "due_date": task.due_date,
+                }
+                for task in tasks.filter(priority__in=["high", "urgent"]).order_by("due_date", "-updated_at")[:8]
+            ],
+            "overdue": [
+                {
+                    "title": task.title,
+                    "project": task.project.name,
+                    "status": task.status,
+                    "status_display": task.get_status_display(),
+                    "priority": task.priority,
+                    "priority_display": task.get_priority_display(),
+                    "due_date": task.due_date,
+                }
+                for task in tasks.filter(status__in=["todo", "in_progress", "review", "blocked"], due_date__lt=today).order_by("due_date")[:8]
+            ],
+            "blocked": [
+                {
+                    "title": task.title,
+                    "project": task.project.name,
+                    "status": task.status,
+                    "status_display": task.get_status_display(),
+                    "priority": task.priority,
+                    "priority_display": task.get_priority_display(),
+                    "due_date": task.due_date,
+                }
+                for task in tasks.filter(status="blocked").order_by("due_date", "-updated_at")[:8]
+            ],
+            "recently_completed": [
+                {
+                    "title": task.title,
+                    "project": task.project.name,
+                    "status": task.status,
+                    "status_display": task.get_status_display(),
+                    "priority": task.priority,
+                    "priority_display": task.get_priority_display(),
+                    "completed_at": task.completed_at,
+                }
+                for task in tasks.filter(status="done").order_by("-completed_at")[:8]
+            ],
+        }
         summary = {
             "projects": projects.count(),
+            "active_projects": projects.exclude(status__in=["completed", "archived"]).count(),
             "tasks": tasks.count(),
             "completed_tasks": tasks.filter(status="done").count(),
-            "overdue_tasks": tasks.filter(status__in=["todo", "in_progress"], due_date__lt=Task.today()).count(),
+            "pending_tasks": tasks.filter(status__in=["todo", "in_progress", "review", "blocked"]).count(),
+            "overdue_tasks": tasks.filter(status__in=["todo", "in_progress", "review", "blocked"], due_date__lt=Task.today()).count(),
         }
-        pdf = analytics_report_pdf(summary, projects_by_status, tasks_by_status, monthly_completion)
+        pdf = analytics_report_pdf(
+            summary,
+            projects_by_status,
+            tasks_by_status,
+            monthly_completion,
+            project_rows=project_rows,
+            task_insights=task_insights,
+        )
         response = HttpResponse(pdf, content_type="application/pdf")
         response["Content-Disposition"] = 'attachment; filename="analytics-summary.pdf"'
         return response
