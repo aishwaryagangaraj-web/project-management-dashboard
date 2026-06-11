@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Insights</p>
+        <h1>Analytics</h1>
+        <p class="page-subtitle">Visualize delivery trends, workload, status distribution, and priority mix.</p>
+    </div>
+</section>
+
+<section class="chart-grid">
+    <div class="card analytics-card">
+        <div class="card-header"><h2>Tasks by Status</h2></div>
+        <div class="chart-container">
+            <canvas id="taskStatusChart"></canvas>
+        </div>
+    </div>
+    <div class="card analytics-card">
+        <div class="card-header"><h2>Projects by Status</h2></div>
+        <div class="chart-container">
+            <canvas id="projectStatusChart"></canvas>
+        </div>
+    </div>
+    <div class="card analytics-card">
+        <div class="card-header"><h2>Tasks by Priority</h2></div>
+        <div class="chart-container">
+            <canvas id="taskPriorityChart"></canvas>
+        </div>
+    </div>
+    <div class="card analytics-card wide">
+        <div class="card-header"><h2>Monthly Task Completion</h2></div>
+        <div class="chart-container">
+            <canvas id="monthlyCompletionChart"></canvas>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ task_status_chart|json_script:"task-status-data" }}
+{{ project_status_chart|json_script:"project-status-data" }}
+{{ task_priority_chart|json_script:"task-priority-data" }}
+{{ monthly_completion_chart|json_script:"monthly-completion-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.dashboardCharts = {
+        taskStatus: JSON.parse(document.getElementById("task-status-data").textContent),
+        projectStatus: JSON.parse(document.getElementById("project-status-data").textContent),
+        taskPriority: JSON.parse(document.getElementById("task-priority-data").textContent),
+        monthlyCompletion: JSON.parse(document.getElementById("monthly-completion-data").textContent)
+    };
+</script>
+{% endblock %}

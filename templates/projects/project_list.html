@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Projects | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Portfolio</p>
+        <h1>Projects</h1>
+        <p class="page-subtitle">Plan, track, and monitor every project in your workspace.</p>
+    </div>
+    <a class="button primary" href="{% url 'projects:create' %}">New Project</a>
+</section>
+
+<form class="filter-card" method="get">
+    <div class="filter-search">
+        <label>Search</label>
+        <input class="form-control" type="search" name="q" value="{{ filters.q }}" placeholder="Search by name or description">
+    </div>
+    <div>
+        <label>Status</label>
+        <select class="form-control" name="status">
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label>Priority</label>
+        <select class="form-control" name="priority">
+            <option value="">All priorities</option>
+            {% for value, label in priority_choices %}
+                <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="filter-actions">
+        <button class="button primary" type="submit">Apply</button>
+        <a class="button ghost" href="{% url 'projects:list' %}">Reset</a>
+    </div>
+</form>
+
+<section class="project-card-grid">
+    {% for project in projects %}
+        <article class="project-card pro-card">
+            <div class="card-header">
+                <div>
+                    <a href="{{ project.get_absolute_url }}"><h2>{{ project.name }}</h2></a>
+                    <small>Owner: {{ project.owner.get_username }}</small>
+                </div>
+                <span class="badge status-{{ project.status }}">{{ project.get_status_display }}</span>
+            </div>
+            <p>{{ project.description|default:"No description yet."|truncatewords:24 }}</p>
+            <div class="badge-row">
+                <span class="badge priority-{{ project.priority }}">{{ project.get_priority_display }}</span>
+                <span class="due-badge">Due {{ project.due_date|default:"not set" }}</span>
+                <span class="due-badge">{{ project.members.count }} members</span>
+            </div>
+            <div class="progress-meta">
+                <span>Project progress</span>
+                <strong>{{ project.progress }}%</strong>
+            </div>
+            <div class="progress-bar"><span style="width: {{ project.progress }}%"></span></div>
+        </article>
+    {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon">PM</div>
+            <h2>No projects found</h2>
+            <p>Create a project or adjust filters to find your work.</p>
+            <a class="button primary" href="{% url 'projects:create' %}">Create Project</a>
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

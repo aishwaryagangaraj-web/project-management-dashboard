@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Register | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="auth-split">
+    <div class="auth-visual">
+        <div class="brand-lockup"><span class="brand-mark">PM</span><strong>ProjectFlow</strong></div>
+        <h1>Launch a polished project command center.</h1>
+        <p>Create your account and start managing projects, tasks, activity, and notifications immediately.</p>
+        <div class="auth-metrics">
+            <div><strong>Plan</strong><span>Structured projects</span></div>
+            <div><strong>Assign</strong><span>Team tasks</span></div>
+            <div><strong>Report</strong><span>Real-time insights</span></div>
+        </div>
+    </div>
+
+    <div class="auth-card">
+        <div class="auth-card__header">
+            <p class="auth-eyebrow">Start your workspace</p>
+            <h1>Create account</h1>
+            <p>Registration signs you in automatically.</p>
+        </div>
+
+        <form method="post" class="auth-form" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="form-alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="field">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+                {% for error in form.username.errors %}
+                    <span class="field-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.password1.id_for_label }}">Password</label>
+                {{ form.password1 }}
+                {% for error in form.password1.errors %}
+                    <span class="field-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+                {{ form.password2 }}
+                {% for error in form.password2.errors %}
+                    <span class="field-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <button class="button primary auth-submit" type="submit">Create account</button>
+        </form>
+
+        <p class="auth-switch">
+            Already registered? <a href="{% url 'accounts:login' %}">Sign in</a>
+        </p>
+    </div>
+</section>
+{% endblock %}

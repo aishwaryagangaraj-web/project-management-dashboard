@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Inbox</p>
+        <h1>Notifications</h1>
+        <p class="page-subtitle">Review assignment updates and workspace alerts.</p>
+    </div>
+</section>
+
+<section class="card notification-list">
+    {% for notification in notifications %}
+        <article class="notice {{ notification.level }} {% if not notification.is_read %}unread{% endif %}">
+            <div>
+                <span class="badge {% if notification.is_read %}status-archived{% else %}status-active{% endif %}">
+                    {% if notification.is_read %}Read{% else %}Unread{% endif %}
+                </span>
+                <strong>{{ notification.title }}</strong>
+                <p>{{ notification.message }}</p>
+                <small>{{ notification.created_at }}</small>
+            </div>
+            {% if not notification.is_read %}
+                <form method="post" action="{% url 'notifications:read' notification.pk %}">
+                    {% csrf_token %}
+                    <button class="button compact" type="submit">Mark read</button>
+                </form>
+            {% endif %}
+        </article>
+    {% empty %}
+        <div class="empty-state">
+            <div class="empty-icon">NT</div>
+            <h2>No notifications</h2>
+            <p>Task assignments and important updates will appear here.</p>
+        </div>
+    {% endfor %}
+</section>
+{% endblock %}

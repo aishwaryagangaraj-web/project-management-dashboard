@@ -1,0 +1,83 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Project Management Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body class="{% if request.user.is_authenticated %}app-body{% else %}auth-body{% endif %}">
+    {% if request.user.is_authenticated %}
+        <aside class="sidebar">
+            <a class="brand" href="{% url 'dashboard:home' %}">
+                <span class="brand-mark">PM</span>
+                <span>
+                    <strong>ProjectFlow</strong>
+                    <small>Workspace OS</small>
+                </span>
+            </a>
+            <nav class="sidebar-nav">
+                <a href="{% url 'dashboard:home' %}"><span class="nav-icon">D</span>Dashboard</a>
+                <a href="{% url 'projects:list' %}"><span class="nav-icon">P</span>Projects</a>
+                <a href="{% url 'tasks:list' %}"><span class="nav-icon">T</span>Tasks</a>
+                <a href="{% url 'analytics:overview' %}"><span class="nav-icon">A</span>Analytics</a>
+                <a href="{% url 'notifications:list' %}"><span class="nav-icon">N</span>Notifications</a>
+            </nav>
+        </aside>
+
+        <div class="app-shell">
+            <header class="topbar">
+                <div>
+                    <strong>Welcome, {{ request.user.get_username }}</strong>
+                </div>
+                <form class="search" role="search">
+                    <span>Search</span>
+                    <input type="search" placeholder="Projects, tasks, people">
+                </form>
+                <div class="user-menu">
+                    <a class="notification-bell" href="{% url 'notifications:list' %}" aria-label="Notifications">
+                        <span class="bell-icon">N</span>
+                        {% if unread_notification_count %}
+                            <strong>{{ unread_notification_count }}</strong>
+                        {% endif %}
+                    </a>
+                    <details class="profile-dropdown">
+                        <summary>
+                            <span class="avatar">{{ request.user.get_username|first|upper }}</span>
+                            <span>{{ request.user.get_username }}</span>
+                        </summary>
+                        <div class="dropdown-menu">
+                            <a href="{% url 'accounts:profile' %}">Profile</a>
+                            <form method="post" action="{% url 'accounts:logout' %}">
+                                {% csrf_token %}
+                                <button type="submit">Logout</button>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+            </header>
+
+            <main class="content">
+    {% else %}
+        <main class="auth-shell">
+    {% endif %}
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <div class="message {{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+
+    {% if request.user.is_authenticated %}
+        </div>
+    {% endif %}
+
+    {% block scripts %}{% endblock %}
+    <script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

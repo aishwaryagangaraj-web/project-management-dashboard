@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Tasks | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Execution board</p>
+        <h1>Tasks</h1>
+        <p class="page-subtitle">Prioritize, filter, and complete work across all accessible projects.</p>
+    </div>
+    <a class="button primary" href="{% url 'tasks:create' %}">New Task</a>
+</section>
+
+<form class="filter-card task-filter" method="get">
+    <div class="filter-search">
+        <label>Search</label>
+        <input class="form-control" type="search" name="q" value="{{ filters.q }}" placeholder="Search tasks or projects">
+    </div>
+    <div>
+        <label>Status</label>
+        <select class="form-control" name="status">
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label>Priority</label>
+        <select class="form-control" name="priority">
+            <option value="">All priorities</option>
+            {% for value, label in priority_choices %}
+                <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label>Due date</label>
+        <select class="form-control" name="due">
+            <option value="">Any due date</option>
+            {% for value, label in due_filters %}
+                <option value="{{ value }}" {% if filters.due == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="filter-actions">
+        <button class="button primary" type="submit">Apply</button>
+        <a class="button ghost" href="{% url 'tasks:list' %}">Reset</a>
+    </div>
+</form>
+
+<section class="card table-card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Task</th>
+                <th>Project</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Assignee</th>
+                <th>Due</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+                <tr>
+                    <td>
+                        <a href="{{ task.get_absolute_url }}"><strong>{{ task.title }}</strong></a>
+                        <small>{{ task.description|truncatewords:10 }}</small>
+                    </td>
+                    <td>{{ task.project.name }}</td>
+                    <td><span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span></td>
+                    <td><span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
+                    <td>{{ task.assignee|default:"Unassigned" }}</td>
+                    <td><span class="due-badge {% if task.due_date and task.status != 'done' %}due-active{% endif %}">{{ task.due_date|default:"No date" }}</span></td>
+                    <td>
+                        {% if task.status != "done" %}
+                            <form method="post" action="{% url 'tasks:complete' task.pk %}">
+                                {% csrf_token %}
+                                <button class="button compact success" type="submit">Complete</button>
+                            </form>
+                        {% else %}
+                            <span class="badge status-done">Done</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <div class="empty-icon">TK</div>
+                            <h2>No tasks found</h2>
+                            <p>Create a task or adjust filters to find work.</p>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

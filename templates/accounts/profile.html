@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Profile | Project Management Dashboard{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Account</p>
+        <h1>{{ object.get_username }}</h1>
+    </div>
+</section>
+<div class="panel">
+    <p>Email: {{ object.email|default:"Not provided" }}</p>
+    <p>Role: {{ object.profile.get_role_display }}</p>
+    <p>Department: {{ object.profile.department|default:"Not provided" }}</p>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ task.title }} | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="detail-hero">
+    <div>
+        <p class="eyebrow">{{ task.project.name }}</p>
+        <h1>{{ task.title }}</h1>
+        <p>{{ task.description|default:"No description yet." }}</p>
+        <div class="badge-row">
+            <span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span>
+            <span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+            <span class="due-badge">Due {{ task.due_date|default:"not set" }}</span>
+        </div>
+    </div>
+    <div class="actions">
+        {% if task.status != "done" %}
+            <form method="post" action="{% url 'tasks:complete' task.pk %}">
+                {% csrf_token %}
+                <button class="button primary" type="submit">Mark Completed</button>
+            </form>
+        {% endif %}
+        <a class="button ghost" href="{% url 'tasks:update' task.pk %}">Edit</a>
+        <a class="button danger" href="{% url 'tasks:delete' task.pk %}">Delete</a>
+    </div>
+</section>
+
+<section class="detail-grid">
+    <div class="main-column">
+        <section class="card">
+            <div class="card-header"><h2>Task Brief</h2></div>
+            <p>{{ task.description|default:"No description has been added yet." }}</p>
+        </section>
+    </div>
+    <aside class="side-column">
+        <section class="card">
+            <div class="card-header"><h2>Properties</h2></div>
+            <div class="meta-grid one-column">
+                <div><span>Assignee</span><strong>{{ task.assignee|default:"Unassigned" }}</strong></div>
+                <div><span>Reporter</span><strong>{{ task.reporter|default:"Not set" }}</strong></div>
+                <div><span>Due date</span><strong>{{ task.due_date|default:"No due date" }}</strong></div>
+                <div><span>Estimate</span><strong>{{ task.estimate_hours }}h</strong></div>
+                <div><span>Completed</span><strong>{{ task.completed_at|default:"Not completed" }}</strong></div>
+            </div>
+        </section>
+    </aside>
+</section>
+{% endblock %}

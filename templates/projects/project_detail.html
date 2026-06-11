@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="detail-hero">
+    <div>
+        <p class="eyebrow">Project overview</p>
+        <h1>{{ project.name }}</h1>
+        <p>{{ project.description|default:"No description yet." }}</p>
+        <div class="badge-row">
+            <span class="badge status-{{ project.status }}">{{ project.get_status_display }}</span>
+            <span class="badge priority-{{ project.priority }}">{{ project.get_priority_display }}</span>
+            <span class="due-badge">Due {{ project.due_date|default:"not set" }}</span>
+        </div>
+    </div>
+    {% if project.owner == request.user %}
+        <div class="actions">
+            <a class="button ghost" href="{% url 'projects:update' project.slug %}">Edit</a>
+            <a class="button danger" href="{% url 'projects:delete' project.slug %}">Delete</a>
+        </div>
+    {% endif %}
+</section>
+
+<section class="detail-grid">
+    <div class="main-column">
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <p class="eyebrow">Delivery</p>
+                    <h2>Progress</h2>
+                </div>
+                <strong>{{ project.progress }}%</strong>
+            </div>
+            <div class="progress-bar large"><span style="width: {{ project.progress }}%"></span></div>
+            <div class="meta-grid">
+                <div><span>Start</span><strong>{{ project.start_date|default:"Not set" }}</strong></div>
+                <div><span>Due</span><strong>{{ project.due_date|default:"Not set" }}</strong></div>
+                <div><span>Budget</span><strong>{{ project.budget }}</strong></div>
+                <div><span>Owner</span><strong>{{ project.owner.get_username }}</strong></div>
+            </div>
+        </section>
+
+        <section class="card table-card">
+            <div class="card-header">
+                <h2>Tasks in this project</h2>
+                <a href="{% url 'tasks:create' %}">Add task</a>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Task</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due</th></tr>
+                </thead>
+                <tbody>
+                    {% for task in project_tasks %}
+                        <tr>
+                            <td><a href="{{ task.get_absolute_url }}"><strong>{{ task.title }}</strong></a></td>
+                            <td><span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span></td>
+                            <td><span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
+                            <td>{{ task.assignee|default:"Unassigned" }}</td>
+                            <td><span class="due-badge">{{ task.due_date|default:"No date" }}</span></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5"><div class="empty-state compact">No tasks have been added to this project.</div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <aside class="side-column">
+        <section class="card">
+            <div class="card-header"><h2>Members</h2></div>
+            <div class="member-list">
+                <div class="member-pill"><span class="avatar">{{ project.owner.get_username|first|upper }}</span>{{ project.owner.get_username }} <small>Owner</small></div>
+                {% for member in project.members.all %}
+                    <div class="member-pill"><span class="avatar">{{ member.get_username|first|upper }}</span>{{ member.get_username }}</div>
+                {% empty %}
+                    <p class="empty">No additional members.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header"><h2>Activity</h2></div>
+            <div class="timeline">
+                {% for activity in project_activity %}
+                    <div class="timeline-item">
+                        <span class="timeline-dot action-{{ activity.action }}"></span>
+                        <div>
+                            <strong>{{ activity.metadata.object_name|default:project.name }}</strong>
+                            <small>{{ activity.get_action_display }} / {{ activity.created_at }}</small>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="empty">No project activity yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </aside>
+</section>
+{% endblock %}

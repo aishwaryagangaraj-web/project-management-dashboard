@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Project Form | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Project setup</p>
+        <h1>{% if object %}Edit Project{% else %}New Project{% endif %}</h1>
+        <p class="page-subtitle">Define ownership, schedule, priority, and team membership.</p>
+    </div>
+</section>
+
+<section class="form-shell">
+    <form method="post" class="form-card form-grid">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="button primary" type="submit">Save Project</button>
+            <a class="button ghost" href="{% url 'projects:list' %}">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

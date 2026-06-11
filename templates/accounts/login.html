@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Login | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="auth-split">
+    <div class="auth-visual">
+        <div class="brand-lockup"><span class="brand-mark">PM</span><strong>ProjectFlow</strong></div>
+        <h1>Run projects with executive-level visibility.</h1>
+        <p>Track delivery, tasks, notifications, and activity in a focused project management workspace.</p>
+        <div class="auth-metrics">
+            <div><strong>Live</strong><span>Portfolio analytics</span></div>
+            <div><strong>Fast</strong><span>Task operations</span></div>
+            <div><strong>Clear</strong><span>Team accountability</span></div>
+        </div>
+    </div>
+
+    <div class="auth-card">
+        <div class="auth-card__header">
+            <p class="auth-eyebrow">Welcome back</p>
+            <h1>Sign in to your workspace</h1>
+            <p>Use your username and password to continue.</p>
+        </div>
+
+        <form method="post" class="auth-form" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="form-alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="field">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+                {% for error in form.username.errors %}
+                    <span class="field-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="field">
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                {{ form.password }}
+                {% for error in form.password.errors %}
+                    <span class="field-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <button class="button primary auth-submit" type="submit">Sign in</button>
+        </form>
+
+        <p class="auth-switch">
+            New here? <a href="{% url 'accounts:register' %}">Create an account</a>
+        </p>
+    </div>
+</section>
+{% endblock %}

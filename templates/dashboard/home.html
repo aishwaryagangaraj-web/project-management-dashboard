@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="hero-card dashboard-hero">
+    <div>
+        <h1>Project Command Center</h1>
+        <p>Track projects, tasks, deadlines and team productivity.</p>
+    </div>
+    <div class="hero-actions">
+        <a class="button primary" href="{% url 'projects:create' %}">+ Create Project</a>
+        <a class="button ghost" href="{% url 'tasks:create' %}">+ Add Task</a>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card accent-blue">
+        <span>Total Projects</span>
+        <strong>{{ project_count }}</strong>
+    </article>
+    <article class="stat-card accent-green">
+        <span>Active Projects</span>
+        <strong>{{ active_project_count }}</strong>
+    </article>
+    <article class="stat-card accent-indigo">
+        <span>Completed Tasks</span>
+        <strong>{{ completed_task_count }}</strong>
+    </article>
+    <article class="stat-card accent-amber">
+        <span>Pending Tasks</span>
+        <strong>{{ pending_task_count }}</strong>
+    </article>
+    <article class="stat-card accent-red">
+        <span>Overdue Tasks</span>
+        <strong>{{ overdue_task_count }}</strong>
+    </article>
+</section>
+
+<section class="dashboard-chart-row">
+    <article class="card analytics-card">
+        <div class="card-header">
+            <h2>Project Progress</h2>
+        </div>
+        <div class="chart-container">
+            <canvas id="projectProgressChart"></canvas>
+        </div>
+    </article>
+
+    <article class="card analytics-card">
+        <div class="card-header">
+            <h2>Tasks by Status</h2>
+        </div>
+        <div class="chart-container">
+            <canvas id="taskStatusChart"></canvas>
+        </div>
+    </article>
+</section>
+
+<section class="dashboard-list-row">
+    <article class="card">
+        <div class="card-header">
+            <h2>Recent Projects</h2>
+            <a href="{% url 'projects:list' %}">View all</a>
+        </div>
+        <div class="project-list compact-list">
+            {% for project in recent_projects %}
+                <a class="project-row" href="{{ project.get_absolute_url }}">
+                    <div>
+                        <strong>{{ project.name }}</strong>
+                        <small>{{ project.get_priority_display }} priority</small>
+                    </div>
+                    <span class="badge status-{{ project.status }}">{{ project.get_status_display }}</span>
+                    <div class="mini-progress">
+                        <span style="width: {{ project.progress }}%"></span>
+                    </div>
+                    <strong>{{ project.progress }}%</strong>
+                </a>
+            {% empty %}
+                <div class="empty-state compact">
+                    <div class="empty-icon">PM</div>
+                    <h2>No projects yet</h2>
+                    <a class="button primary" href="{% url 'projects:create' %}">Create your first project</a>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="card table-card">
+        <div class="card-header">
+            <h2>Recent Tasks</h2>
+            <a href="{% url 'tasks:list' %}">View all</a>
+        </div>
+        <table class="data-table compact-table">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th>Due</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in recent_tasks %}
+                    <tr>
+                        <td>
+                            <a href="{{ task.get_absolute_url }}"><strong>{{ task.title }}</strong></a>
+                            <small>{{ task.project.name }}</small>
+                        </td>
+                        <td><span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span></td>
+                        <td><span class="due-badge">{{ task.due_date|default:"No date" }}</span></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="empty-state compact">
+                                <div class="empty-icon">TK</div>
+                                <h2>No tasks yet</h2>
+                                <a class="button primary" href="{% url 'tasks:create' %}">Add Task</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+
+<section class="card activity-card">
+    <div class="card-header">
+        <h2>Recent Activity Timeline</h2>
+    </div>
+    <div class="timeline timeline-horizontal">
+        {% for activity in recent_activity %}
+            <div class="timeline-item">
+                <span class="timeline-dot action-{{ activity.action }}"></span>
+                <div>
+                    <strong>{{ activity.metadata.object_name|default:activity.object_type }}</strong>
+                    <small>{% if activity.action == "completed" %}Completed{% else %}{{ activity.get_action_display }}{% endif %} / {{ activity.created_at }}</small>
+                </div>
+            </div>
+        {% empty %}
+            <div class="empty-state compact">
+                <div class="empty-icon">AC</div>
+                <h2>No activity yet</h2>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ task_status_chart|json_script:"task-status-data" }}
+{{ project_progress_chart|json_script:"project-progress-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.dashboardCharts = {
+        taskStatus: JSON.parse(document.getElementById("task-status-data").textContent),
+        projectProgress: JSON.parse(document.getElementById("project-progress-data").textContent)
+    };
+</script>
+{% endblock %}
