@@ -23,7 +23,7 @@ The dashboard is built to resemble a modern SaaS productivity tool, with a dark 
 - Chart.js analytics for task status and project progress
 - Notifications with unread count and mark-as-read flow
 - Activity logs for project and task events
-- Demo data seeding command for populated dashboards
+- Automatic demo data creation for empty deployments
 - Responsive SaaS-style UI
 - Render deployment setup with Gunicorn, WhiteNoise, and environment-based settings
 
@@ -109,12 +109,6 @@ Run migrations:
 python manage.py migrate
 ```
 
-Create demo data:
-
-```bash
-python manage.py seed_demo_data
-```
-
 Run the development server:
 
 ```bash
@@ -127,11 +121,11 @@ Open:
 http://127.0.0.1:8000/
 ```
 
-Demo user created by the seed command:
+Demo user automatically created after migrations when the database has no application data:
 
 ```text
-Username: demo_admin
-Password: demo12345
+Username: aishwarya
+Password: Aishu@123
 ```
 
 ## Deployment
@@ -165,6 +159,8 @@ CSRF_TRUSTED_ORIGINS=https://project-management-dashboard-j8ih.onrender.com
 ```
 
 Static files are handled with WhiteNoise.
+
+Demo data is created automatically during `python manage.py migrate` only when the database has no users, projects, tasks, notifications, or activity logs. This keeps Render free deployments populated without requiring shell access and prevents duplicate demo records on restarts.
 
 ## Folder Structure
 
