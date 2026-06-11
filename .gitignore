@@ -1,8 +1,11 @@
 .venv/
-vendor_packages/
 __pycache__/
 *.pyc
 db.sqlite3
 media/
+reports/
 staticfiles/
 .env
+vendor_packages/
+deps_local/
+deps_wheels/
