@@ -143,54 +143,251 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (!window.Chart || !window.dashboardCharts) {
+    const analyticsDashboard = window.analyticsDashboard || {};
+    const chartData = {
+        ...(window.dashboardCharts || {}),
+        ...(analyticsDashboard.charts || {}),
+    };
+
+    const animateCounter = (element) => {
+        const rawTarget = Number.parseFloat(element.dataset.countTo || "0");
+        const decimals = Number.parseInt(element.dataset.countDecimals || "0", 10);
+        const suffix = element.dataset.countSuffix || "";
+        const duration = 900;
+        const start = performance.now();
+        const from = 0;
+
+        const step = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const value = from + (rawTarget - from) * eased;
+            element.textContent = `${value.toFixed(decimals)}${suffix}`;
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+
+        window.requestAnimationFrame(step);
+    };
+
+    document.querySelectorAll("[data-count-to]").forEach(animateCounter);
+
+    if (!window.Chart) {
         return;
     }
 
-    const palette = ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"];
-    const buildDataset = (label, data, type) => ({
-        label,
-        data: data.data,
-        backgroundColor: type === "line" ? "rgba(37, 99, 235, 0.16)" : palette,
-        borderColor: type === "line" ? "#2563eb" : "#ffffff",
-        borderWidth: type === "line" ? 3 : 2,
-        fill: type === "line",
-        tension: 0.35,
-        borderRadius: type === "bar" ? 10 : 0,
-    });
     window.projectFlowCharts = window.projectFlowCharts || {};
+    const rootStyles = getComputedStyle(document.documentElement);
+    const palette = {
+        blue: rootStyles.getPropertyValue("--primary").trim() || "#2563eb",
+        green: rootStyles.getPropertyValue("--success").trim() || "#16a34a",
+        amber: rootStyles.getPropertyValue("--warning").trim() || "#f59e0b",
+        red: rootStyles.getPropertyValue("--danger").trim() || "#dc2626",
+        indigo: rootStyles.getPropertyValue("--indigo").trim() || "#7c3aed",
+        teal: "#0891b2",
+    };
 
-    const render = (id, type, data, label) => {
-        const canvas = document.getElementById(id);
-        if (!canvas || !data) {
+    const rgba = (hex, alpha) => {
+        const normalized = hex.replace("#", "");
+        const value = normalized.length === 3
+            ? normalized.split("").map((character) => character + character).join("")
+            : normalized;
+        const red = Number.parseInt(value.slice(0, 2), 16);
+        const green = Number.parseInt(value.slice(2, 4), 16);
+        const blue = Number.parseInt(value.slice(4, 6), 16);
+        return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+    };
+
+    const defaultColors = [palette.blue, palette.green, palette.amber, palette.red, palette.indigo, palette.teal];
+
+    const normalizeConfig = (source, fallbackLabel, typeHint) => {
+        if (!source) {
+            return null;
+        }
+        if (source.datasets) {
+            return source;
+        }
+        return {
+            type: typeHint,
+            labels: source.labels || [],
+            datasets: [
+                {
+                    label: fallbackLabel,
+                    data: source.data || [],
+                    backgroundColor: typeHint === "line" ? rgba(palette.blue, 0.18) : defaultColors,
+                    borderColor: palette.blue,
+                    borderWidth: typeHint === "line" ? 3 : 0,
+                    fill: typeHint === "line",
+                    tension: 0.35,
+                },
+            ],
+        };
+    };
+
+    const renderChart = (canvasId, source, fallbackLabel, typeHint = "bar") => {
+        const canvas = document.getElementById(canvasId);
+        const config = normalizeConfig(source, fallbackLabel, typeHint);
+        if (!canvas || !config) {
             return;
         }
-        if (window.projectFlowCharts[id]) {
-            window.projectFlowCharts[id].destroy();
+
+        if (window.projectFlowCharts[canvasId]) {
+            window.projectFlowCharts[canvasId].destroy();
         }
-        window.projectFlowCharts[id] = new Chart(canvas, {
+
+        const type = config.type || typeHint;
+        const datasets = (config.datasets || []).map((dataset, index) => ({
+            borderRadius: type === "bar" ? 10 : 0,
+            borderWidth: 2,
+            tension: 0.35,
+            fill: type === "line",
+            pointRadius: type === "line" ? 0 : 4,
+            pointHoverRadius: type === "line" ? 4 : 6,
+            backgroundColor: Array.isArray(dataset.backgroundColor)
+                ? dataset.backgroundColor
+                : dataset.backgroundColor || defaultColors[index % defaultColors.length],
+            borderColor: dataset.borderColor || defaultColors[index % defaultColors.length],
+            ...dataset,
+        }));
+
+        const isDoughnut = type === "doughnut" || type === "pie";
+        const stacked = Boolean(config.options && config.options.stacked);
+        const indexAxis = config.options && config.options.indexAxis ? config.options.indexAxis : undefined;
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 900,
+                easing: "easeOutQuart",
+            },
+            interaction: {
+                mode: "index",
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                    },
+                },
+                tooltip: {
+                    enabled: true,
+                },
+            },
+        };
+
+        if (isDoughnut) {
+            options.cutout = config.options && config.options.cutout ? config.options.cutout : "68%";
+            options.plugins.legend.position = "bottom";
+        } else {
+            options.scales = {
+                y: {
+                    beginAtZero: true,
+                    stacked,
+                    ticks: { precision: 0 },
+                    grid: {
+                        color: rootStyles.getPropertyValue("--border").trim() || "#e2e8f0",
+                    },
+                },
+                x: {
+                    stacked,
+                    grid: {
+                        display: false,
+                    },
+                },
+            };
+            if (indexAxis) {
+                options.indexAxis = indexAxis;
+            }
+        }
+
+        if (type === "line") {
+            options.elements = {
+                point: {
+                    radius: 0,
+                    hoverRadius: 5,
+                },
+            };
+        }
+
+        window.projectFlowCharts[canvasId] = new Chart(canvas, {
             type,
             data: {
-                labels: data.labels,
-                datasets: [buildDataset(label, data, type)],
+                labels: config.labels || [],
+                datasets,
+            },
+            options,
+        });
+    };
+
+    const renderSparkline = (canvasId, series, color) => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !Array.isArray(series) || !series.length) {
+            return;
+        }
+
+        if (window.projectFlowCharts[canvasId]) {
+            window.projectFlowCharts[canvasId].destroy();
+        }
+
+        window.projectFlowCharts[canvasId] = new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: series.map((_, index) => index + 1),
+                datasets: [
+                    {
+                        data: series,
+                        borderColor: color,
+                        backgroundColor: rgba(color, 0.16),
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        borderWidth: 2,
+                    },
+                ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: "bottom", labels: { boxWidth: 12, usePointStyle: true } },
+                    legend: { display: false },
+                    tooltip: { enabled: false },
                 },
-                scales: type === "pie" ? {} : {
-                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#eef2f7" } },
-                    x: { grid: { display: false } },
+                elements: {
+                    point: { radius: 0 },
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false },
                 },
             },
         });
     };
 
-    render("taskStatusChart", "pie", window.dashboardCharts.taskStatus, "Tasks");
-    render("projectStatusChart", "bar", window.dashboardCharts.projectStatus, "Projects");
-    render("projectProgressChart", "bar", window.dashboardCharts.projectProgress, "Progress");
-    render("taskPriorityChart", "bar", window.dashboardCharts.taskPriority, "Tasks");
-    render("monthlyCompletionChart", "line", window.dashboardCharts.monthlyCompletion, "Completed tasks");
+    const toneColors = {
+        "accent-blue": palette.blue,
+        "accent-green": palette.green,
+        "accent-amber": palette.amber,
+        "accent-red": palette.red,
+        "accent-indigo": palette.indigo,
+        "accent-teal": palette.teal,
+    };
+
+    (analyticsDashboard.kpis || []).forEach((card) => {
+        renderSparkline(`kpi-sparkline-${card.id}`, card.series || [], toneColors[card.tone] || palette.blue);
+    });
+
+    renderChart("taskStatusChart", chartData.taskStatus, "Tasks", analyticsDashboard.charts ? "doughnut" : "pie");
+    renderChart("projectStatusChart", chartData.projectStatus, "Projects", "doughnut");
+    renderChart("projectProgressChart", chartData.projectProgress, "Progress", "bar");
+    renderChart("taskPriorityChart", chartData.taskPriority, "Tasks", "bar");
+    renderChart("monthlyCompletionChart", chartData.monthlyCompletion, "Completed tasks", "line");
+    renderChart("weeklyStackChart", chartData.weeklyStack, "Weekly flow", "bar");
+    renderChart("productivityAreaChart", chartData.productivityArea, "Productivity", "line");
+    renderChart("burndownChart", chartData.burndown, "Burndown", "line");
+    renderChart("timelineChart", chartData.timeline, "Timeline", "line");
+    renderChart("workloadChart", chartData.workload, "Workload", "bar");
 });

@@ -69,14 +69,39 @@
 <section class="demo-section" id="demo">
     <div class="section-heading">
         <p class="eyebrow">Demo video</p>
-        <h2>Use this section for a walkthrough recording or embedded preview.</h2>
+        <h2>Watch the product walkthrough directly in the page.</h2>
     </div>
-    <div class="demo-frame">
-        <div class="demo-frame__play">▶</div>
-        <div>
-            <strong>Video walkthrough</strong>
-            <p>Replace this block with a hosted recording once you capture a final demo.</p>
-        </div>
+    <div class="demo-video-card glass-card">
+        {% if demo_video_url %}
+            <div class="demo-video-frame">
+                <iframe
+                    src="{{ demo_video_url }}"
+                    title="ProjectFlow demo video"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                    referrerpolicy="strict-origin-when-cross-origin"
+                ></iframe>
+            </div>
+            <div class="demo-video-meta">
+                <strong>ProjectFlow demo video</strong>
+                <p>Use the embedded walkthrough to present the app flow during demos and interviews.</p>
+            </div>
+            <small class="demo-video-note">Embedded video playback works directly on this page.</small>
+        {% else %}
+            <div class="demo-video-fallback">
+                <img src="{% static demo_video_thumbnail %}" alt="ProjectFlow demo thumbnail">
+                <div class="demo-video-fallback__copy">
+                    <strong>Demo video coming soon</strong>
+                    <p>Preview the product layout here while the final walkthrough is being recorded.</p>
+                </div>
+            </div>
+            <div class="demo-video-meta">
+                <strong>Demo video coming soon</strong>
+                <p>Set <code>DEMO_VIDEO_URL</code> to enable the live YouTube embed.</p>
+            </div>
+            <small class="demo-video-note">A thumbnail is shown until the video is configured.</small>
+        {% endif %}
     </div>
 </section>
 

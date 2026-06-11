@@ -115,6 +115,7 @@ LOGIN_REDIRECT_URL = "dashboard:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 SITE_URL = config("SITE_URL", default="http://127.0.0.1:8001")
+DEMO_VIDEO_URL = config("DEMO_VIDEO_URL", default="https://www.youtube.com/embed/dQw4w9WgXcQ")
 
 EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = config("EMAIL_HOST", default="")
