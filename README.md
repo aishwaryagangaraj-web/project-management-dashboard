@@ -22,7 +22,7 @@ https://project-management-dashboard-j8ih.onrender.com
 
 ### Kanban Board
 
-(Add screenshot here)
+![alt text](<Screenshot 2026-06-11 234409.png>)
 
 ### Analytics Dashboard
 
