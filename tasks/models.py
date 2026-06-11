@@ -1,8 +1,17 @@
+import os
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+
+
+def validate_task_attachment(file_obj):
+    valid_extensions = {"pdf", "docx", "png", "jpg", "jpeg", "txt"}
+    extension = os.path.splitext(file_obj.name)[1].lstrip(".").lower()
+    if extension not in valid_extensions:
+        raise ValidationError("Allowed file types are pdf, docx, png, jpg, and txt.")
 
 
 class Task(models.Model):
@@ -28,6 +37,12 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="todo")
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="medium")
     estimate_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    attachment = models.FileField(
+        upload_to="tasks/attachments/",
+        blank=True,
+        null=True,
+        validators=[validate_task_attachment],
+    )
     due_date = models.DateField(blank=True, null=True)
     completed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -53,3 +68,17 @@ class Task(models.Model):
 
     def get_absolute_url(self):
         return reverse("tasks:detail", kwargs={"pk": self.pk})
+
+
+class TaskComment(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="task_comments")
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.user.get_username()} on {self.task.title}"

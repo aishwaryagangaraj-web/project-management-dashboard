@@ -4,27 +4,43 @@ from datetime import date
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from accounts.access import can_create_task, can_edit_task_details, can_manage_task_content, can_update_task_status, visible_tasks_queryset
 from analytics.models import ActivityLog
-from notifications.models import Notification
+from .forms import TaskCommentForm, TaskForm
+from .models import Task, TaskComment, validate_task_attachment
 
-from .forms import TaskForm
-from .models import Task
+
+def can_manage_task(user, task):
+    return can_edit_task_details(user, task)
+
+
+def can_manage_comment(user, comment):
+    return user == comment.user or can_manage_task_content(user, comment.task)
+
+
+def delete_uploaded_file(file_field):
+    if not file_field:
+        return
+    storage = file_field.storage
+    if storage.exists(file_field.name):
+        storage.delete(file_field.name)
 
 
 class TaskQuerysetMixin(LoginRequiredMixin):
     def get_queryset(self):
-        user = self.request.user
-        return Task.objects.filter(
-            Q(assignee=user) | Q(reporter=user) | Q(project__owner=user) | Q(project__members=user)
-        ).distinct()
+        return visible_tasks_queryset(
+            self.request.user,
+            Task.objects.select_related("project", "assignee", "reporter", "project__owner"),
+        ).annotate(comment_count=Count("comments", distinct=True))
 
 
 class TaskListView(TaskQuerysetMixin, ListView):
@@ -61,6 +77,7 @@ class TaskListView(TaskQuerysetMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["can_create_task"] = can_create_task(self.request.user)
         context["status_choices"] = Task.STATUS_CHOICES
         context["priority_choices"] = Task.PRIORITY_CHOICES
         context["due_filters"] = [
@@ -93,6 +110,7 @@ class TaskKanbanView(TaskQuerysetMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["can_create_task"] = can_create_task(self.request.user)
         columns = []
         for status, label in Task.STATUS_CHOICES:
             columns.append(
@@ -123,6 +141,7 @@ class TaskCalendarView(TaskQuerysetMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["can_create_task"] = can_create_task(self.request.user)
         today = timezone.localdate()
         year = self._get_int_param("year", today.year)
         month = self._get_int_param("month", today.month)
@@ -189,6 +208,118 @@ class TaskDetailView(TaskQuerysetMixin, DetailView):
     template_name = "tasks/task_detail.html"
     context_object_name = "task"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["task_comments"] = (
+            self.object.comments.select_related("user", "user__profile").all()
+        )
+        context["comment_form"] = TaskCommentForm()
+        context["can_manage_task"] = can_edit_task_details(self.request.user, self.object)
+        context["can_manage_task_content"] = can_manage_task_content(self.request.user, self.object)
+        context["can_update_status"] = can_update_task_status(self.request.user, self.object)
+        context["comment_count"] = getattr(self.object, "comment_count", self.object.comments.count())
+        return context
+
+
+class TaskCommentCreateView(TaskQuerysetMixin, View):
+    def post(self, request, *args, **kwargs):
+        task = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        if not can_manage_task_content(request.user, task):
+            messages.error(request, "You do not have permission to comment on this task.")
+            return redirect(task.get_absolute_url())
+        form = TaskCommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.task = task
+            comment.user = request.user
+            comment.save()
+            messages.success(request, "Comment added.")
+        else:
+            for error in form.errors.get("comment", []):
+                messages.error(request, error)
+        return redirect(task.get_absolute_url())
+
+
+class TaskCommentUpdateView(TaskQuerysetMixin, UpdateView):
+    model = TaskComment
+    form_class = TaskCommentForm
+    template_name = "tasks/task_comment_form.html"
+    pk_url_kwarg = "comment_pk"
+
+    def get_queryset(self):
+        return TaskComment.objects.select_related("task", "task__project", "user").filter(task__in=super().get_queryset())
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not can_manage_comment(request.user, self.object):
+            return redirect(self.object.task.get_absolute_url())
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "Comment updated.")
+        return response
+
+    def get_success_url(self):
+        return self.object.task.get_absolute_url()
+
+
+class TaskCommentDeleteView(TaskQuerysetMixin, View):
+    def post(self, request, *args, **kwargs):
+        comment = get_object_or_404(
+            TaskComment.objects.select_related("task", "task__project", "user"),
+            pk=kwargs["comment_pk"],
+            task__in=self.get_queryset(),
+        )
+        if not can_manage_comment(request.user, comment):
+            return redirect(comment.task.get_absolute_url())
+        comment.delete()
+        messages.success(request, "Comment deleted.")
+        return redirect(comment.task.get_absolute_url())
+
+
+class TaskAttachmentUploadView(TaskQuerysetMixin, View):
+    def post(self, request, *args, **kwargs):
+        task = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        upload = request.FILES.get("attachment")
+        if not upload:
+            messages.error(request, "Choose a file to upload.")
+            return redirect(task.get_absolute_url())
+        if not can_manage_task_content(request.user, task):
+            messages.error(request, "You do not have permission to upload files for this task.")
+            return redirect(task.get_absolute_url())
+
+        old_attachment = task.attachment
+        try:
+            validate_task_attachment(upload)
+            task.attachment.save(upload.name, upload, save=False)
+            task.save()
+        except ValidationError as exc:
+            if task.attachment and task.attachment.name != getattr(old_attachment, "name", None):
+                delete_uploaded_file(task.attachment)
+            task.attachment = old_attachment
+            messages.error(request, " ".join(sum(exc.message_dict.values(), [])) if hasattr(exc, "message_dict") else str(exc))
+            return redirect(task.get_absolute_url())
+
+        if old_attachment and old_attachment.name != task.attachment.name:
+            delete_uploaded_file(old_attachment)
+        messages.success(request, "Attachment uploaded.")
+        return redirect(task.get_absolute_url())
+
+
+class TaskAttachmentDeleteView(TaskQuerysetMixin, View):
+    def post(self, request, *args, **kwargs):
+        task = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        if not can_manage_task_content(request.user, task):
+            messages.error(request, "You do not have permission to remove files for this task.")
+            return redirect(task.get_absolute_url())
+        if task.attachment:
+            delete_uploaded_file(task.attachment)
+            task.attachment = None
+            task.save(update_fields=["attachment", "updated_at"])
+            messages.success(request, "Attachment removed.")
+        return redirect(task.get_absolute_url())
+
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
     model = Task
@@ -200,10 +331,15 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         kwargs["user"] = self.request.user
         return kwargs
 
+    def dispatch(self, request, *args, **kwargs):
+        if not can_create_task(request.user):
+            messages.error(request, "You do not have permission to create tasks.")
+            return redirect("dashboard:home")
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         form.instance.reporter = self.request.user
         response = super().form_valid(form)
-        self._create_assignment_notification()
         ActivityLog.objects.create(
             actor=self.request.user,
             action="created",
@@ -213,16 +349,6 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         )
         messages.success(self.request, "Task created successfully.")
         return response
-
-    def _create_assignment_notification(self):
-        if self.object.assignee and self.object.assignee != self.request.user:
-            Notification.objects.create(
-                recipient=self.object.assignee,
-                title="New task assigned",
-                message=f"You were assigned to {self.object.title}.",
-                level="info",
-                link=self.object.get_absolute_url(),
-            )
 
 
 class TaskUpdateView(TaskQuerysetMixin, UpdateView):
@@ -235,17 +361,19 @@ class TaskUpdateView(TaskQuerysetMixin, UpdateView):
         kwargs["user"] = self.request.user
         return kwargs
 
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not can_edit_task_details(request.user, self.object):
+            messages.error(request, "You do not have permission to edit this task.")
+            return redirect(self.object.get_absolute_url())
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
-        old_assignee_id = self.get_queryset().get(pk=self.object.pk).assignee_id
+        current = self.get_queryset().get(pk=self.object.pk)
+        old_attachment = current.attachment
         response = super().form_valid(form)
-        if self.object.assignee_id and self.object.assignee_id != old_assignee_id:
-            Notification.objects.create(
-                recipient=self.object.assignee,
-                title="Task assigned",
-                message=f"You were assigned to {self.object.title}.",
-                level="info",
-                link=self.object.get_absolute_url(),
-            )
+        if old_attachment and (not self.object.attachment or old_attachment.name != self.object.attachment.name):
+            delete_uploaded_file(old_attachment)
         ActivityLog.objects.create(
             actor=self.request.user,
             action="updated",
@@ -265,9 +393,18 @@ class TaskDeleteView(TaskQuerysetMixin, DeleteView):
     template_name = "tasks/task_confirm_delete.html"
     success_url = reverse_lazy("tasks:list")
 
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not can_edit_task_details(request.user, self.object):
+            messages.error(request, "You do not have permission to delete this task.")
+            return redirect(self.object.get_absolute_url())
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         task_name = self.object.title
         task_id = self.object.pk
+        if self.object.attachment:
+            delete_uploaded_file(self.object.attachment)
         response = super().form_valid(form)
         ActivityLog.objects.create(
             actor=self.request.user,
@@ -283,6 +420,9 @@ class TaskDeleteView(TaskQuerysetMixin, DeleteView):
 class TaskCompleteView(TaskQuerysetMixin, View):
     def post(self, request, *args, **kwargs):
         task = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        if not can_update_task_status(request.user, task):
+            messages.error(request, "You do not have permission to update this task status.")
+            return redirect(task.get_absolute_url())
         task.status = "done"
         task.completed_at = timezone.now()
         task.save(update_fields=["status", "completed_at", "updated_at"])
@@ -302,6 +442,8 @@ class TaskStatusUpdateView(TaskQuerysetMixin, View):
 
     def post(self, request, *args, **kwargs):
         task = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
+        if not can_update_task_status(request.user, task):
+            return JsonResponse({"ok": False, "error": "Permission denied."}, status=403)
         try:
             payload = json.loads(request.body.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError):

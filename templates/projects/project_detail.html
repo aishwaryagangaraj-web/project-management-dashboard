@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load avatar_tags task_tags %}
 
 {% block title %}{{ project.name }} | ProjectFlow{% endblock %}
 
@@ -14,12 +15,13 @@
             <span class="due-badge">Due {{ project.due_date|default:"not set" }}</span>
         </div>
     </div>
-    {% if project.owner == request.user %}
-        <div class="actions">
+    <div class="actions">
+        <a class="button ghost" href="{% url 'reports:project' project.slug %}">Export PDF</a>
+        {% if can_manage_project %}
             <a class="button ghost" href="{% url 'projects:update' project.slug %}">Edit</a>
             <a class="button danger" href="{% url 'projects:delete' project.slug %}">Delete</a>
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </section>
 
 <section class="detail-grid">
@@ -44,11 +46,13 @@
         <section class="card table-card">
             <div class="card-header">
                 <h2>Tasks in this project</h2>
-                <a href="{% url 'tasks:create' %}">Add task</a>
+                {% if can_create_task %}
+                    <a href="{% url 'tasks:create' %}">Add task</a>
+                {% endif %}
             </div>
             <table class="data-table">
                 <thead>
-                    <tr><th>Task</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due</th></tr>
+                    <tr><th>Task</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Comments</th><th>Due</th></tr>
                 </thead>
                 <tbody>
                     {% for task in project_tasks %}
@@ -57,10 +61,11 @@
                             <td><span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span></td>
                             <td><span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
                             <td>{{ task.assignee|default:"Unassigned" }}</td>
+                            <td>{{ task.comment_count }}</td>
                             <td><span class="due-badge">{{ task.due_date|default:"No date" }}</span></td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="5"><div class="empty-state compact">No tasks have been added to this project.</div></td></tr>
+                        <tr><td colspan="6"><div class="empty-state compact">No tasks have been added to this project.</div></td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -71,9 +76,31 @@
         <section class="card">
             <div class="card-header"><h2>Members</h2></div>
             <div class="member-list">
-                <div class="member-pill"><span class="avatar">{{ project.owner.get_username|first|upper }}</span>{{ project.owner.get_username }} <small>Owner</small></div>
+                <div class="member-pill">
+                    <span class="avatar">
+                        {% avatar_url project.owner as owner_avatar %}
+                        {% if owner_avatar %}
+                            <img src="{{ owner_avatar }}" alt="{{ project.owner.get_username }}">
+                        {% else %}
+                            {% avatar_initials project.owner as owner_initials %}
+                            <span>{{ owner_initials }}</span>
+                        {% endif %}
+                    </span>
+                    {{ project.owner.get_username }} <small>Owner</small>
+                </div>
                 {% for member in project.members.all %}
-                    <div class="member-pill"><span class="avatar">{{ member.get_username|first|upper }}</span>{{ member.get_username }}</div>
+                    <div class="member-pill">
+                        <span class="avatar">
+                            {% avatar_url member as member_avatar %}
+                            {% if member_avatar %}
+                                <img src="{{ member_avatar }}" alt="{{ member.get_username }}">
+                            {% else %}
+                                {% avatar_initials member as member_initials %}
+                                <span>{{ member_initials }}</span>
+                            {% endif %}
+                        </span>
+                        {{ member.get_username }}
+                    </div>
                 {% empty %}
                     <p class="empty">No additional members.</p>
                 {% endfor %}

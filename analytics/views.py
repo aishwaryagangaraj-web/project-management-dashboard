@@ -3,6 +3,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.views.generic import TemplateView
 
+from accounts.access import visible_tasks_queryset
 from projects.models import Project
 from tasks.models import Task
 
@@ -14,7 +15,7 @@ class AnalyticsOverviewView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         projects = Project.objects.filter(Q(owner=user) | Q(members=user)).distinct()
-        tasks = Task.objects.filter(Q(assignee=user) | Q(reporter=user) | Q(project__owner=user) | Q(project__members=user)).distinct()
+        tasks = visible_tasks_queryset(user, Task.objects.all())
         project_status_labels = dict(Project.STATUS_CHOICES)
         task_status_labels = dict(Task.STATUS_CHOICES)
         task_priority_labels = dict(Task.PRIORITY_CHOICES)

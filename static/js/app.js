@@ -1,4 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
+    window.projectFlowShowToast = window.projectFlowShowToast || ((message, type = "success") => {
+        const stack = document.querySelector(".toast-stack");
+        if (!stack) {
+            return;
+        }
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        stack.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 3200);
+    });
+
     const currentPath = window.location.pathname;
     document.querySelectorAll(".sidebar-nav a").forEach((link) => {
         const href = link.getAttribute("href");
@@ -7,23 +19,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    const themeToggle = document.querySelector("[data-theme-toggle]");
+    const themeKey = "projectflow-theme";
+    const root = document.documentElement;
+    const applyTheme = (theme) => {
+        root.dataset.theme = theme;
+        localStorage.setItem(themeKey, theme);
+    };
+    if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+            const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
+            applyTheme(nextTheme);
+        });
+    }
+    if (!root.dataset.theme) {
+        applyTheme(localStorage.getItem(themeKey) || "dark");
+    }
+
+    document.querySelectorAll(".messages .message").forEach((message) => {
+        window.setTimeout(() => {
+            message.classList.add("fade-out");
+        }, 3200);
+        window.setTimeout(() => {
+            message.remove();
+        }, 4200);
+    });
+
     const kanbanBoard = document.querySelector("[data-kanban-board]");
     if (kanbanBoard) {
         const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
         const csrfToken = csrfInput ? csrfInput.value : "";
         let draggedCard = null;
-
-        const showToast = (message, type = "success") => {
-            const stack = document.querySelector(".toast-stack");
-            if (!stack) {
-                return;
-            }
-            const toast = document.createElement("div");
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            stack.appendChild(toast);
-            window.setTimeout(() => toast.remove(), 3200);
-        };
 
         const refreshColumn = (zone) => {
             const column = zone.closest(".kanban-column");
@@ -103,12 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         badge.className = `badge status-${nextStatus}`;
                         badge.textContent = data.status_label;
                     }
-                    showToast(data.message || "Task status updated.");
+                    window.projectFlowShowToast(data.message || "Task status updated.");
                 } catch (error) {
                     previousParent.appendChild(card);
                     refreshColumn(zone);
                     refreshColumn(previousParent);
-                    showToast(error.message || "Task status update failed.", "error");
+                    window.projectFlowShowToast(error.message || "Task status update failed.", "error");
                 }
             });
         });

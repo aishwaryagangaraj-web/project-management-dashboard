@@ -1,13 +1,19 @@
-{% load static %}
+{% load static avatar_tags %}
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Project Management Dashboard{% endblock %}</title>
+    <script>
+        (function () {
+            const storedTheme = localStorage.getItem("projectflow-theme");
+            document.documentElement.dataset.theme = storedTheme || "dark";
+        })();
+    </script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
-<body class="{% if request.user.is_authenticated %}app-body{% else %}auth-body{% endif %}">
+<body class="{% if request.user.is_authenticated %}app-body{% else %}public-body{% endif %}">
     {% if request.user.is_authenticated %}
         <aside class="sidebar">
             <a class="brand" href="{% url 'dashboard:home' %}">
@@ -38,6 +44,10 @@
                     <input type="search" placeholder="Projects, tasks, people">
                 </form>
                 <div class="user-menu">
+                    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme">
+                        <span class="theme-toggle__icon theme-toggle__sun" aria-hidden="true">&#9728;</span>
+                        <span class="theme-toggle__icon theme-toggle__moon" aria-hidden="true">&#9790;</span>
+                    </button>
                     <a class="notification-bell" href="{% url 'notifications:list' %}" aria-label="Notifications">
                         <span class="bell-icon">N</span>
                         {% if unread_notification_count %}
@@ -46,7 +56,15 @@
                     </a>
                     <details class="profile-dropdown">
                         <summary>
-                            <span class="avatar">{{ request.user.get_username|first|upper }}</span>
+                            <span class="avatar">
+                                {% avatar_url request.user as navbar_avatar %}
+                                {% if navbar_avatar %}
+                                    <img src="{{ navbar_avatar }}" alt="{{ request.user.get_username }}">
+                                {% else %}
+                                    {% avatar_initials request.user as navbar_initials %}
+                                    <span>{{ navbar_initials }}</span>
+                                {% endif %}
+                            </span>
                             <span>{{ request.user.get_username }}</span>
                         </summary>
                         <div class="dropdown-menu">
@@ -59,23 +77,63 @@
                     </details>
                 </div>
             </header>
-
             <main class="content">
     {% else %}
-        <main class="auth-shell">
+        <div class="public-shell">
+            <header class="public-topbar">
+                <a class="brand" href="{% url 'dashboard:home' %}">
+                    <span class="brand-mark">PM</span>
+                    <span>
+                        <strong>ProjectFlow</strong>
+                        <small>Portfolio-ready delivery system</small>
+                    </span>
+                </a>
+                <nav class="public-nav">
+                    <a href="{% url 'dashboard:home' %}#features">Features</a>
+                    <a href="{% url 'dashboard:home' %}#preview">Preview</a>
+                    <a href="{% url 'dashboard:architecture' %}">Architecture</a>
+                    <a href="{% url 'dashboard:home' %}#demo">Demo Video</a>
+                </nav>
+                <div class="public-actions">
+                    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle theme">
+                        <span class="theme-toggle__icon theme-toggle__sun" aria-hidden="true">&#9728;</span>
+                        <span class="theme-toggle__icon theme-toggle__moon" aria-hidden="true">&#9790;</span>
+                    </button>
+                    <a class="button ghost" href="{% url 'accounts:login' %}">Login</a>
+                    <a class="button primary" href="{% url 'accounts:register' %}">Get Started</a>
+                </div>
+            </header>
+            {% if request.resolver_match and request.resolver_match.namespace == "accounts" %}
+                <main class="auth-shell">
+            {% else %}
+                <main class="public-content">
+            {% endif %}
     {% endif %}
+
                 {% if messages %}
-                    <div class="messages">
+                    <div class="messages {% if request.resolver_match and request.resolver_match.namespace == 'accounts' %}auth-messages{% endif %}">
                         {% for message in messages %}
                             <div class="message {{ message.tags }}">{{ message }}</div>
                         {% endfor %}
                     </div>
                 {% endif %}
-
+                <div class="toast-stack" aria-live="polite"></div>
                 {% block content %}{% endblock %}
-            </main>
 
     {% if request.user.is_authenticated %}
+            </main>
+        </div>
+    {% else %}
+                {% if request.resolver_match and request.resolver_match.namespace != "accounts" %}
+                    <footer class="public-footer">
+                        <div>
+                            <strong>ProjectFlow</strong>
+                            <p>Built for portfolio demos, interviews, and production-ready team workflows.</p>
+                        </div>
+                        <small>&copy; {% now "Y" %} ProjectFlow</small>
+                    </footer>
+                {% endif %}
+                </main>
         </div>
     {% endif %}
 

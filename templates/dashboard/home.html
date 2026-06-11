@@ -7,10 +7,16 @@
     <div>
         <h1>Project Command Center</h1>
         <p>Track projects, tasks, deadlines and team productivity.</p>
+        <span class="badge">{{ user_role|default:"member"|capfirst }}</span>
     </div>
     <div class="hero-actions">
-        <a class="button primary" href="{% url 'projects:create' %}">+ Create Project</a>
-        <a class="button ghost" href="{% url 'tasks:create' %}">+ Add Task</a>
+        {% if can_create_project %}
+            <a class="button primary" href="{% url 'projects:create' %}">+ Create Project</a>
+        {% endif %}
+        {% if can_create_task %}
+            <a class="button ghost" href="{% url 'tasks:create' %}">+ Add Task</a>
+        {% endif %}
+        <a class="button ghost" href="{% url 'reports:analytics' %}">Export PDF</a>
     </div>
 </section>
 

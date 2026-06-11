@@ -12,7 +12,7 @@
 </section>
 
 <section class="form-shell">
-    <form method="post" class="form-card form-grid">
+    <form method="post" enctype="multipart/form-data" class="form-card form-grid">
         {% csrf_token %}
         {{ form.as_p }}
         <div class="form-actions">

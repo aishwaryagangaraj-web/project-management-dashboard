@@ -15,6 +15,7 @@ class Profile(models.Model):
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
     department = models.CharField(max_length=120, blank=True)
     phone = models.CharField(max_length=32, blank=True)
+    reminder_last_sent = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

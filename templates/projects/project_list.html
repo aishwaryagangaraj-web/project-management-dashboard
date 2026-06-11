@@ -9,7 +9,9 @@
         <h1>Projects</h1>
         <p class="page-subtitle">Plan, track, and monitor every project in your workspace.</p>
     </div>
-    <a class="button primary" href="{% url 'projects:create' %}">New Project</a>
+    {% if can_create_project %}
+        <a class="button primary" href="{% url 'projects:create' %}">New Project</a>
+    {% endif %}
 </section>
 
 <form class="filter-card" method="get">

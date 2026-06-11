@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Server error | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="empty-state" style="margin-top: 32px;">
+    <div class="empty-icon">500</div>
+    <h1>Something went wrong</h1>
+    <p>We hit an unexpected error while processing your request.</p>
+    <a class="button primary" href="{% url 'dashboard:home' %}">Go home</a>
+</section>
+{% endblock %}

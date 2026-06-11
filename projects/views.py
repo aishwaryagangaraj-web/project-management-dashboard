@@ -1,9 +1,17 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from accounts.access import (
+    can_assign_members,
+    can_create_project,
+    can_manage_project,
+    visible_projects_queryset,
+    visible_tasks_queryset,
+)
 from analytics.models import ActivityLog
 
 from .forms import ProjectForm
@@ -12,14 +20,13 @@ from .models import Project
 
 class ProjectQuerysetMixin(LoginRequiredMixin):
     def get_queryset(self):
-        user = self.request.user
-        return Project.objects.filter(Q(owner=user) | Q(members=user)).distinct()
+        return visible_projects_queryset(self.request.user, Project.objects.select_related("owner"))
 
 
 class ProjectOwnerRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         obj = self.get_object()
-        return obj.owner == self.request.user
+        return can_manage_project(self.request.user, obj)
 
 
 class ProjectListView(ProjectQuerysetMixin, ListView):
@@ -44,6 +51,7 @@ class ProjectListView(ProjectQuerysetMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["can_create_project"] = can_create_project(self.request.user)
         context["status_choices"] = Project.STATUS_CHOICES
         context["priority_choices"] = Project.PRIORITY_CHOICES
         context["filters"] = {
@@ -61,7 +69,18 @@ class ProjectDetailView(ProjectQuerysetMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["project_tasks"] = self.object.tasks.select_related("assignee").order_by("status", "due_date")[:12]
+        visible_tasks = visible_tasks_queryset(
+            self.request.user,
+            self.object.tasks.select_related("assignee", "reporter", "project", "project__owner"),
+        )
+        context["project_tasks"] = (
+            visible_tasks
+            .annotate(comment_count=Count("comments", distinct=True))
+            .order_by("status", "due_date")[:12]
+        )
+        context["can_manage_project"] = can_manage_project(self.request.user, self.object)
+        context["can_assign_members"] = can_assign_members(self.request.user, self.object)
+        context["can_create_task"] = can_create_project(self.request.user) or self.object.owner_id == self.request.user.id
         context["project_activity"] = ActivityLog.objects.filter(
             object_type="project",
             object_id=self.object.pk,
@@ -73,6 +92,12 @@ class ProjectCreateView(LoginRequiredMixin, CreateView):
     model = Project
     form_class = ProjectForm
     template_name = "projects/project_form.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_create_project(request.user):
+            messages.error(request, "You do not have permission to create projects.")
+            return redirect("dashboard:home")
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         form.instance.owner = self.request.user

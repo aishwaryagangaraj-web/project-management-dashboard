@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load avatar_tags %}
 
 {% block title %}Kanban | ProjectFlow{% endblock %}
 
@@ -11,12 +12,13 @@
     </div>
     <div class="actions">
         <a class="button ghost" href="{% url 'tasks:calendar' %}">Calendar</a>
-        <a class="button primary" href="{% url 'tasks:create' %}">New Task</a>
+        {% if can_create_task %}
+            <a class="button primary" href="{% url 'tasks:create' %}">New Task</a>
+        {% endif %}
     </div>
 </section>
 
 <form class="csrf-token-form">{% csrf_token %}</form>
-<div class="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
 <section class="kanban-board" data-kanban-board>
     {% for column in kanban_columns %}
@@ -47,10 +49,24 @@
                             <span class="due-badge {% if task.due_date and task.status != 'done' %}due-active{% endif %}">
                                 {{ task.due_date|default:"No date" }}
                             </span>
+                            <span class="badge">{{ task.comment_count }} comments</span>
                         </div>
                         <div class="kanban-assignee">
-                            <span class="avatar small-avatar">{{ task.assignee.username|default:"U"|first|upper }}</span>
-                            <span>{{ task.assignee|default:"Unassigned" }}</span>
+                            {% if task.assignee %}
+                                <span class="avatar small-avatar">
+                                    {% avatar_url task.assignee as card_avatar %}
+                                    {% if card_avatar %}
+                                        <img src="{{ card_avatar }}" alt="{{ task.assignee.get_username }}">
+                                    {% else %}
+                                        {% avatar_initials task.assignee as card_initials %}
+                                        <span>{{ card_initials }}</span>
+                                    {% endif %}
+                                </span>
+                                <span>{{ task.assignee }}</span>
+                            {% else %}
+                                <span class="avatar small-avatar">U</span>
+                                <span>Unassigned</span>
+                            {% endif %}
                         </div>
                     </article>
                 {% empty %}

@@ -1,4 +1,7 @@
+from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+
+from .models import Profile
 
 
 class CleanAuthenticationForm(AuthenticationForm):
@@ -29,3 +32,13 @@ class RegisterForm(UserCreationForm):
         self.fields["password2"].widget.attrs.update(
             {"autocomplete": "new-password", "placeholder": "Confirm your password"}
         )
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ["avatar", "department", "phone"]
+        widgets = {
+            "department": forms.TextInput(attrs={"placeholder": "Department"}),
+            "phone": forms.TextInput(attrs={"placeholder": "Phone"}),
+        }

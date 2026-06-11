@@ -1,140 +1,116 @@
-# Project Management Dashboard
+# ProjectFlow
 
-A professional Django-based Project Management Dashboard for tracking projects, tasks, deadlines, notifications, activity logs, and analytics from a single workspace.
+ProjectFlow is a Django-based project management dashboard built for portfolio, interview, and production-style demonstrations. It combines RBAC, Kanban, calendar scheduling, comments, attachments, reminders, exports, analytics, and a JWT-backed API in one workspace.
 
-Live Demo: https://project-management-dashboard-j8ih.onrender.com
+Live demo: https://project-management-dashboard-j8ih.onrender.com
 
-## Project Overview
+## What It Includes
 
-This project is designed as a portfolio-ready full-stack Django application. It includes authentication, project and task management, dashboard analytics, notifications, activity tracking, responsive UI, and production deployment configuration for Render.
-
-The dashboard is built to resemble a modern SaaS productivity tool, with a dark sidebar, top navigation, statistic cards, Chart.js visualizations, professional tables, badges, progress bars, and polished authentication pages.
-
-## Features
-
-- User authentication with login, registration, logout, and protected routes
-- Project CRUD with owner-based access control
-- Task CRUD with status, priority, due dates, and assignee tracking
-- Mark task as completed workflow
-- Project progress tracking based on completed tasks
-- Search and filters for projects and tasks
-- Status, priority, and due date badges
-- Dashboard statistic cards for projects and tasks
-- Chart.js analytics for task status and project progress
-- Notifications with unread count and mark-as-read flow
-- Activity logs for project and task events
-- Automatic demo data creation for empty deployments
-- Responsive SaaS-style UI
-- Render deployment setup with Gunicorn, WhiteNoise, and environment-based settings
+- Authentication with registration, login, logout, profile, and avatar upload
+- Role-based access control for Admin, Project Manager, and Team Member
+- Projects with owner and member management
+- Tasks with statuses, priorities, due dates, Kanban, calendar, comments, and files
+- Notifications, activity logs, analytics, and dashboard quick links
+- Automatic demo data seeding for empty deployments on Render
+- Dark/light theme with persisted preference
+- PDF export for project, task, and analytics reports
+- REST API with JWT auth and Swagger docs
+- Landing page, architecture diagram page, custom error pages, and responsive UI polish
 
 ## Screenshots
 
-Add screenshots here after deployment or local testing.
-
-Suggested screenshots:
-
-- Login page
-- Dashboard command center
-- Project list
-- Project detail page
-- Task list
-- Analytics page
-
-Example:
+Use the generated preview asset in the repo:
 
 ```md
-![Dashboard Screenshot](screenshots/dashboard.png)
+![ProjectFlow dashboard preview](static/images/dashboard-preview.png)
 ```
+
+Recommended screenshots for the README:
+
+- Landing page
+- Dashboard
+- Kanban board
+- Calendar view
+- Task detail with comments and attachments
+- Analytics and PDF export
+- API docs
+
+## Architecture
+
+The application is split into focused Django apps:
+
+- `accounts` for authentication, profiles, avatars, and role helpers
+- `projects` for project CRUD and membership
+- `tasks` for task workflow, Kanban, calendar, comments, and attachments
+- `notifications` for in-app alerts and email reminders
+- `analytics` for charts and overview data
+- `reports` for PDF generation
+- `api` for JWT-authenticated REST endpoints
+- `dashboard` for the landing page, dashboard shell, and architecture page
+
+See the architecture page in the app at `/architecture/`.
+
+## API
+
+The REST API is mounted at `/api/` and includes:
+
+- `POST /api/auth/register/`
+- `POST /api/auth/login/`
+- `POST /api/auth/refresh/`
+- `GET /api/auth/profile/`
+- `PATCH /api/auth/profile/`
+- CRUD for projects and tasks
+- Task comments and file upload endpoints
+- Notifications list and mark-read endpoints
+- Analytics stats endpoint
+- Swagger docs at `/api/docs/`
 
 ## Tech Stack
 
-- Python
+- Python 3
 - Django
-- SQLite for local development
-- PostgreSQL support for production
+- Django REST Framework
+- JWT authentication
+- drf-spectacular
+- ReportLab
 - Chart.js
-- HTML5
-- CSS3
-- JavaScript
-- Gunicorn
+- HTML, CSS, JavaScript
 - WhiteNoise
-- dj-database-url
-- python-decouple
-- Render
+- Gunicorn
+- PostgreSQL on Render
 
-## Installation
-
-Clone the repository:
+## Local Setup
 
 ```bash
 git clone https://github.com/aishwaryagangaraj-web/project-management-dashboard.git
 cd project-management-dashboard
-```
-
-Create and activate a virtual environment:
-
-```bash
 python -m venv .venv
-```
-
-Windows PowerShell:
-
-```powershell
 .\.venv\Scripts\Activate.ps1
-```
-
-macOS/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
 pip install -r requirements.txt
-```
-
-Create a local environment file:
-
-```bash
-cp .env.example .env
-```
-
-For local development, you can keep SQLite by leaving `DATABASE_URL` empty or removing it from `.env`.
-
-Run migrations:
-
-```bash
+copy .env.example .env
 python manage.py migrate
-```
-
-Run the development server:
-
-```bash
-python manage.py runserver
+python manage.py runserver 8001
 ```
 
 Open:
 
 ```text
-http://127.0.0.1:8000/
+http://127.0.0.1:8001/
 ```
 
-Demo user automatically created after migrations when the database has no application data:
+## Demo Credentials
+
+The deployment seeds demo data automatically when the database is empty.
 
 ```text
 Username: aishwarya
 Password: Aishu@123
+Email: aishwaryagangaraj@gmail.com
 ```
 
-## Deployment
+## Render Deployment
 
-Live deployment:
-
-https://project-management-dashboard-j8ih.onrender.com
-
-The project is configured for Render deployment.
+This project is configured to run on Render without shell access.
 
 Build command:
 
@@ -148,58 +124,44 @@ Start command:
 gunicorn project_management_dashboard.wsgi:application
 ```
 
-Required Render environment variables:
+Required environment variables:
 
 ```env
-SECRET_KEY=your-secure-secret-key
+SECRET_KEY=replace-me
 DEBUG=False
-ALLOWED_HOSTS=project-management-dashboard-j8ih.onrender.com
-DATABASE_URL=your-render-postgres-url
-CSRF_TRUSTED_ORIGINS=https://project-management-dashboard-j8ih.onrender.com
+ALLOWED_HOSTS=your-app.onrender.com
+DATABASE_URL=your-postgres-url
+CSRF_TRUSTED_ORIGINS=https://your-app.onrender.com
+SITE_URL=https://your-app.onrender.com
+EMAIL_HOST=smtp.your-provider.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-smtp-user
+EMAIL_HOST_PASSWORD=your-smtp-password
+DEFAULT_FROM_EMAIL=ProjectFlow <no-reply@your-app.com>
 ```
 
-Static files are handled with WhiteNoise.
+## Key Pages
 
-Demo data is created automatically during `python manage.py migrate` only when the database has no users, projects, tasks, notifications, or activity logs. This keeps Render free deployments populated without requiring shell access and prevents duplicate demo records on restarts.
+- `/` landing page for anonymous visitors
+- `/dashboard/` authenticated overview
+- `/projects/`
+- `/tasks/`
+- `/tasks/kanban/`
+- `/tasks/calendar/`
+- `/analytics/`
+- `/reports/analytics/`
+- `/api/docs/`
+- `/architecture/`
 
-## Folder Structure
+## Notes
 
-```text
-project_management_dashboard/
-|-- accounts/                      # Authentication and profile logic
-|-- analytics/                     # Activity logs and analytics app
-|-- dashboard/                     # Dashboard views and demo data command
-|   `-- management/commands/
-|       `-- seed_demo_data.py
-|-- notifications/                 # Notification models, views, and context processor
-|-- projects/                      # Project models, forms, views, and URLs
-|-- tasks/                         # Task models, forms, views, and URLs
-|-- project_management_dashboard/  # Core Django settings, URLs, WSGI/ASGI
-|-- static/                        # CSS and JavaScript assets
-|-- templates/                     # Shared and app templates
-|-- media/                         # User-uploaded media
-|-- build.sh                       # Render build script
-|-- requirements.txt               # Python dependencies
-|-- .env.example                   # Environment variable template
-`-- manage.py
-```
-
-## Future Improvements
-
-- Add team invitations and role-based permissions
-- Add comments and file attachments for tasks
-- Add Kanban board view
-- Add calendar view for deadlines
-- Add email notifications
-- Add REST API using Django REST Framework
-- Add automated tests for major workflows
-- Add pagination and advanced sorting for large datasets
-- Add project export reports as PDF or CSV
+- Demo data is only created when the database is empty, so Render restarts do not duplicate records.
+- Email reminders are wired to Django's email backend and support SMTP environment variables.
+- Custom 404 and 500 pages are included for production use.
 
 ## Author
 
 Developed by Aishwarya Gangaraj.
 
 GitHub: https://github.com/aishwaryagangaraj-web
-
-Live Demo: https://project-management-dashboard-j8ih.onrender.com

@@ -1,22 +1,38 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
+from django.shortcuts import render
 from django.views.generic import TemplateView
 
+from accounts.access import can_create_project, can_create_task, is_admin, user_role, visible_tasks_queryset
 from analytics.models import ActivityLog
+from notifications.models import Notification
 from projects.models import Project
 from tasks.models import Task
-from notifications.models import Notification
 
 
-class HomeDashboardView(LoginRequiredMixin, TemplateView):
+class HomeDashboardView(TemplateView):
     template_name = "dashboard/home.html"
+    landing_template_name = "dashboard/landing.html"
+
+    def get_template_names(self):
+        if self.request.user.is_authenticated:
+            return [self.template_name]
+        return [self.landing_template_name]
 
     def get_context_data(self, **kwargs):
+        if not self.request.user.is_authenticated:
+            return {
+                "public_project_count": Project.objects.count(),
+                "public_task_count": Task.objects.count(),
+                "public_member_count": get_user_model().objects.count(),
+                "public_role": "Administrator" if is_admin(self.request.user) else "Guest",
+            }
+
         context = super().get_context_data(**kwargs)
         user = self.request.user
         projects = Project.objects.filter(Q(owner=user) | Q(members=user)).distinct()
-        tasks = Task.objects.filter(Q(assignee=user) | Q(reporter=user) | Q(project__owner=user) | Q(project__members=user)).distinct()
+        tasks = visible_tasks_queryset(user, Task.objects.all())
         project_status_labels = dict(Project.STATUS_CHOICES)
         task_status_labels = dict(Task.STATUS_CHOICES)
         projects_by_status = list(projects.values("status").annotate(total=Count("id")).order_by("status"))
@@ -32,6 +48,9 @@ class HomeDashboardView(LoginRequiredMixin, TemplateView):
 
         context.update(
             {
+                "user_role": user_role(user),
+                "can_create_project": can_create_project(user),
+                "can_create_task": can_create_task(user),
                 "project_count": projects.count(),
                 "active_project_count": projects.filter(status="active").count(),
                 "task_count": tasks.count(),
@@ -62,3 +81,15 @@ class HomeDashboardView(LoginRequiredMixin, TemplateView):
             }
         )
         return context
+
+
+class ArchitectureView(TemplateView):
+    template_name = "dashboard/architecture.html"
+
+
+def handler404(request, exception):
+    return render(request, "404.html", status=404)
+
+
+def handler500(request):
+    return render(request, "500.html", status=500)

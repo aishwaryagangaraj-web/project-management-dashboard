@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Comment | ProjectFlow{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Comment</p>
+        <h1>Edit Comment</h1>
+    </div>
+</section>
+
+<section class="form-shell">
+    <form method="post" class="form-card form-grid">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="button primary" type="submit">Save Comment</button>
+            <a class="button ghost" href="{{ object.task.get_absolute_url }}">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

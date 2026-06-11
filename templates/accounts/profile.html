@@ -1,17 +1,57 @@
 {% extends "base.html" %}
 
+{% load avatar_tags %}
+
 {% block title %}Profile | Project Management Dashboard{% endblock %}
 
 {% block content %}
 <section class="page-header">
     <div>
         <p class="eyebrow">Account</p>
-        <h1>{{ object.get_username }}</h1>
+        <h1>{{ object.user.get_username }}</h1>
     </div>
 </section>
-<div class="panel">
-    <p>Email: {{ object.email|default:"Not provided" }}</p>
-    <p>Role: {{ object.profile.get_role_display }}</p>
-    <p>Department: {{ object.profile.department|default:"Not provided" }}</p>
-</div>
+<section class="detail-grid">
+    <div class="main-column">
+        <div class="card">
+            <div class="card-header">
+                <h2>Profile</h2>
+            </div>
+            <div class="profile-hero">
+                <div class="avatar avatar-xl">
+                    {% avatar_url object.user as profile_avatar %}
+                    {% if profile_avatar %}
+                        <img src="{{ profile_avatar }}" alt="{{ object.user.get_username }}">
+                    {% else %}
+                        {% avatar_initials object.user as initials %}
+                        <span>{{ initials }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <strong>{{ object.user.get_username }}</strong>
+                    <p>{{ object.user.email|default:"Not provided" }}</p>
+                </div>
+            </div>
+            <div class="meta-grid one-column">
+                <div><span>Role</span><strong>{{ object.get_role_display }}</strong></div>
+                <div><span>Department</span><strong>{{ object.department|default:"Not provided" }}</strong></div>
+                <div><span>Phone</span><strong>{{ object.phone|default:"Not provided" }}</strong></div>
+            </div>
+        </div>
+    </div>
+    <aside class="side-column">
+        <div class="card">
+            <div class="card-header">
+                <h2>Update Profile</h2>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="form-grid">
+                {% csrf_token %}
+                {{ profile_form.as_p }}
+                <div class="form-actions">
+                    <button class="button primary" type="submit">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </aside>
+</section>
 {% endblock %}

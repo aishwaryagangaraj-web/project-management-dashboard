@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load avatar_tags task_tags %}
 
 {% block title %}{{ task.title }} | ProjectFlow{% endblock %}
 
@@ -12,27 +13,85 @@
             <span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span>
             <span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
             <span class="due-badge">Due {{ task.due_date|default:"not set" }}</span>
+            <span class="badge">{{ comment_count }} comments</span>
         </div>
     </div>
     <div class="actions">
-        {% if task.status != "done" %}
+        <a class="button ghost" href="{% url 'reports:task' task.pk %}">Export PDF</a>
+        {% if can_manage_task and task.status != "done" %}
             <form method="post" action="{% url 'tasks:complete' task.pk %}">
                 {% csrf_token %}
                 <button class="button primary" type="submit">Mark Completed</button>
             </form>
         {% endif %}
-        <a class="button ghost" href="{% url 'tasks:update' task.pk %}">Edit</a>
-        <a class="button danger" href="{% url 'tasks:delete' task.pk %}">Delete</a>
+        {% if can_manage_task %}
+            <a class="button ghost" href="{% url 'tasks:update' task.pk %}">Edit</a>
+            <a class="button danger" href="{% url 'tasks:delete' task.pk %}">Delete</a>
+        {% endif %}
     </div>
 </section>
 
 <section class="detail-grid">
     <div class="main-column">
         <section class="card">
-            <div class="card-header"><h2>Task Brief</h2></div>
+            <div class="card-header">
+                <h2>Task Brief</h2>
+            </div>
             <p>{{ task.description|default:"No description has been added yet." }}</p>
         </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>Comments ({{ comment_count }})</h2>
+            </div>
+            {% if can_manage_task_content %}
+                <form method="post" action="{% url 'tasks:comment_create' task.pk %}" class="comment-compose">
+                    {% csrf_token %}
+                    {{ comment_form.comment }}
+                    <div class="form-actions">
+                        <button class="button primary" type="submit">Add Comment</button>
+                    </div>
+                </form>
+            {% endif %}
+            <div class="comment-stack">
+                {% for comment in task_comments %}
+                    <article class="comment-card">
+                        <div class="comment-avatar">
+                            {% avatar_url comment.user as comment_avatar %}
+                            {% if comment_avatar %}
+                                <img src="{{ comment_avatar }}" alt="{{ comment.user.get_username }}">
+                            {% else %}
+                                {% avatar_initials comment.user as comment_initials %}
+                                <span>{{ comment_initials }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="comment-body">
+                            <div class="comment-meta">
+                                <strong>{{ comment.user.get_username }}</strong>
+                                <small>{{ comment.created_at }}</small>
+                                {% if comment.updated_at != comment.created_at %}
+                                    <small>Edited</small>
+                                {% endif %}
+                            </div>
+                            <p>{{ comment.comment }}</p>
+                            {% if request.user == comment.user or can_manage_task_content %}
+                                <div class="comment-actions">
+                                    <a class="button compact ghost" href="{% url 'tasks:comment_update' task.pk comment.pk %}">Edit</a>
+                                    <form method="post" action="{% url 'tasks:comment_delete' task.pk comment.pk %}">
+                                        {% csrf_token %}
+                                        <button class="button compact danger" type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="empty-state compact">No comments yet.</div>
+                {% endfor %}
+            </div>
+        </section>
     </div>
+
     <aside class="side-column">
         <section class="card">
             <div class="card-header"><h2>Properties</h2></div>
@@ -43,6 +102,38 @@
                 <div><span>Estimate</span><strong>{{ task.estimate_hours }}h</strong></div>
                 <div><span>Completed</span><strong>{{ task.completed_at|default:"Not completed" }}</strong></div>
             </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2>Attachment</h2>
+            </div>
+            {% if task.attachment %}
+                <div class="attachment-card">
+                    {% file_kind task.attachment as attachment_kind %}
+                    <div class="attachment-icon attachment-{{ attachment_kind }}">{{ attachment_kind|upper }}</div>
+                    <div class="attachment-copy">
+                        <strong>{{ task.attachment.name|cut:"tasks/attachments/" }}</strong>
+                        <small><a href="{{ task.attachment.url }}" target="_blank" rel="noopener">Download file</a></small>
+                    </div>
+                </div>
+                {% if can_manage_task %}
+                    <form method="post" action="{% url 'tasks:attachment_delete' task.pk %}">
+                        {% csrf_token %}
+                        <button class="button compact danger" type="submit">Remove file</button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <p class="empty">No file uploaded yet.</p>
+            {% endif %}
+
+            {% if can_manage_task_content %}
+                <form method="post" enctype="multipart/form-data" action="{% url 'tasks:attachment_upload' task.pk %}" class="attachment-upload">
+                    {% csrf_token %}
+                    <input class="form-control" type="file" name="attachment" accept=".pdf,.docx,.png,.jpg,.jpeg,.txt">
+                    <button class="button primary" type="submit">Upload File</button>
+                </form>
+            {% endif %}
         </section>
     </aside>
 </section>

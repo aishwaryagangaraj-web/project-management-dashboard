@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load avatar_tags task_tags %}
 
 {% block title %}Tasks | ProjectFlow{% endblock %}
 
@@ -9,7 +10,9 @@
         <h1>Tasks</h1>
         <p class="page-subtitle">Prioritize, filter, and complete work across all accessible projects.</p>
     </div>
-    <a class="button primary" href="{% url 'tasks:create' %}">New Task</a>
+    {% if can_create_task %}
+        <a class="button primary" href="{% url 'tasks:create' %}">New Task</a>
+    {% endif %}
 </section>
 
 <form class="filter-card task-filter" method="get">
@@ -69,11 +72,28 @@
                     <td>
                         <a href="{{ task.get_absolute_url }}"><strong>{{ task.title }}</strong></a>
                         <small>{{ task.description|truncatewords:10 }}</small>
+                        <small>{{ task.comment_count|default:task.comments.count }} comments</small>
                     </td>
                     <td>{{ task.project.name }}</td>
                     <td><span class="badge status-{{ task.status }}">{{ task.get_status_display }}</span></td>
                     <td><span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
-                    <td>{{ task.assignee|default:"Unassigned" }}</td>
+                    <td>
+                        <span class="inline-avatar">
+                            {% if task.assignee %}
+                                {% avatar_url task.assignee as assignee_avatar %}
+                                {% if assignee_avatar %}
+                                    <img src="{{ assignee_avatar }}" alt="{{ task.assignee.get_username }}">
+                                {% else %}
+                                    {% avatar_initials task.assignee as assignee_initials %}
+                                    <span>{{ assignee_initials }}</span>
+                                {% endif %}
+                                {{ task.assignee }}
+                            {% else %}
+                                <span class="avatar mini">U</span>
+                                Unassigned
+                            {% endif %}
+                        </span>
+                    </td>
                     <td><span class="due-badge {% if task.due_date and task.status != 'done' %}due-active{% endif %}">{{ task.due_date|default:"No date" }}</span></td>
                     <td>
                         {% if task.status != "done" %}

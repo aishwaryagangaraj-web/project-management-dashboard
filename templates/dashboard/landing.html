@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ProjectFlow | Project Management Dashboard{% endblock %}
+
+{% block content %}
+<section class="landing-hero">
+    <div class="landing-hero__copy">
+        <p class="eyebrow">Project management dashboard</p>
+        <h1>ProjectFlow helps teams ship work with visibility and discipline.</h1>
+        <p>
+            Track projects, tasks, reminders, analytics, comments, files, and deadlines in one dashboard built for
+            portfolio demos and interview reviews.
+        </p>
+        <div class="hero-actions">
+            <a class="button primary" href="{% url 'accounts:register' %}">Get Started</a>
+            <a class="button ghost" href="{% url 'accounts:login' %}">Login</a>
+        </div>
+        <div class="hero-metrics">
+            <div><strong>Kanban</strong><span>Drag tasks across workflow stages</span></div>
+            <div><strong>Calendar</strong><span>Track deadlines by month</span></div>
+            <div><strong>PDF + API</strong><span>Reports and JWT endpoints built in</span></div>
+        </div>
+    </div>
+    <div class="landing-hero__preview" id="preview">
+        <img src="{% static 'images/dashboard-preview.png' %}" alt="ProjectFlow dashboard preview">
+        <div class="preview-chip preview-chip--top">Live dashboard preview</div>
+        <div class="preview-chip preview-chip--bottom">Dark / light theme support</div>
+    </div>
+</section>
+
+<section class="feature-section" id="features">
+    <div class="section-heading">
+        <p class="eyebrow">Features</p>
+        <h2>Everything you need for a polished delivery workflow.</h2>
+    </div>
+    <div class="feature-grid">
+        <article class="feature-card"><strong>RBAC</strong><p>Admin, project manager, and team member access with server-side enforcement.</p></article>
+        <article class="feature-card"><strong>Collaboration</strong><p>Task comments, avatars, attachments, and notifications for shared work.</p></article>
+        <article class="feature-card"><strong>Reporting</strong><p>Export project, task, and analytics PDFs for stakeholders.</p></article>
+        <article class="feature-card"><strong>API</strong><p>JWT auth, CRUD endpoints, Swagger docs, and mobile-ready JSON.</p></article>
+    </div>
+</section>
+
+<section class="preview-section">
+    <div class="section-heading">
+        <p class="eyebrow">Benefits</p>
+        <h2>Built to read well in a portfolio and survive real usage.</h2>
+    </div>
+    <div class="benefit-grid">
+        <article class="benefit-card"><strong>Fast to demo</strong><p>Login, assign work, move tasks, and show charts without extra setup.</p></article>
+        <article class="benefit-card"><strong>Responsive</strong><p>Sidebar, kanban, calendar, and detail views stay usable on smaller screens.</p></article>
+        <article class="benefit-card"><strong>Production-minded</strong><p>Validation, logging, custom error pages, and Render-compatible startup behavior.</p></article>
+    </div>
+</section>
+
+<section class="testimonials-section">
+    <div class="section-heading">
+        <p class="eyebrow">Testimonials</p>
+        <h2>Dummy quotes for the portfolio presentation.</h2>
+    </div>
+    <div class="testimonial-grid">
+        <article class="testimonial-card"><p>"The workflow is clean, fast, and easy to explain in an interview."</p><strong>Product Lead</strong></article>
+        <article class="testimonial-card"><p>"Kanban, calendar, and exports make the app feel complete, not like a prototype."</p><strong>Engineering Manager</strong></article>
+        <article class="testimonial-card"><p>"The API surface is structured enough to hand off to a frontend or mobile client."</p><strong>Full Stack Reviewer</strong></article>
+    </div>
+</section>
+
+<section class="demo-section" id="demo">
+    <div class="section-heading">
+        <p class="eyebrow">Demo video</p>
+        <h2>Use this section for a walkthrough recording or embedded preview.</h2>
+    </div>
+    <div class="demo-frame">
+        <div class="demo-frame__play">▶</div>
+        <div>
+            <strong>Video walkthrough</strong>
+            <p>Replace this block with a hosted recording once you capture a final demo.</p>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div>
+        <p class="eyebrow">Start now</p>
+        <h2>Open the workspace and inspect the implementation directly.</h2>
+    </div>
+    <div class="hero-actions">
+        <a class="button primary" href="{% url 'accounts:register' %}">Get Started</a>
+        <a class="button ghost" href="{% url 'dashboard:architecture' %}">View Architecture</a>
+    </div>
+</section>
+{% endblock %}
